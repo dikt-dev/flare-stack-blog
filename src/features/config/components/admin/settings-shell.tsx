@@ -82,15 +82,9 @@ export function SettingsShell({
               </button>
             )}
             <button
-              type="button"
+              type="submit"
+              form={FORM_ID}
               disabled={save.disabled || save.busy}
-              onClick={() => {
-                // 手动触发 form 的 submit，兼容移动端
-                const form = document.getElementById(
-                  FORM_ID,
-                ) as HTMLFormElement | null;
-                form?.requestSubmit();
-              }}
               className="settings-button fuwari-btn-primary"
             >
               {saveLabel}
