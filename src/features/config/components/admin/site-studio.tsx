@@ -342,7 +342,13 @@ function NavLinksEditor() {
                         const canonical = canonicalizeNavHref(
                           typeof value === "string" ? value : "",
                         );
-                        // 新加项填了固定项链接 → 只报错，不锁死
+                        // 【临时排查】打印校验的输入值
+                        console.log("【validate】", {
+                          index,
+                          value,
+                          canonical,
+                          isFixed: FIXED_NAV_HREFS.includes(canonical),
+                        });
                         if (
                           index >= FIXED_NAV_HREFS.length &&
                           FIXED_NAV_HREFS.includes(canonical)
