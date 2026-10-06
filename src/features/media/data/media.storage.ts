@@ -74,6 +74,8 @@ export async function putSiteAsset(
       cacheControl: IMAGE_CACHE_CONTROL,
     },
   });
-  // 返回不带 images/ 的相对路径
-  return { key, url: `/asset/${assetPath}` };
+
+  // 加上版本号，每次上传都会产生新 URL，强制刷新 CDN 缓存
+  const version = Date.now();
+  return { key, url: `/asset/${assetPath}?v=${version}` };
 }
