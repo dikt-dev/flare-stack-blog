@@ -242,7 +242,7 @@ export function SiteStudio() {
 }
 
 function NavLinksEditor() {
-  const { control, register, setValue, watch, formState } =
+  const { control, register, setValue, watch, formState, clearErrors } =
     useFormContext<SystemConfig>();
   const { fields, append, remove, move } = useFieldArray({
     control,
@@ -269,14 +269,9 @@ function NavLinksEditor() {
           const href = watch(`site.navLinks.${index}.href`) ?? "";
           const canonicalHref = canonicalizeNavHref(href);
 
-          // 前 3 项且 href 匹配固定项时，视为固定项（只读、不可删）
+          // 只有前 3 项且 href 匹配固定项时，才视为固定项（只读、不可删）
           const isFixed =
             index < FIXED_NAV_HREFS.length &&
-            FIXED_NAV_HREFS.includes(canonicalHref);
-
-          // 新加项填了固定项链接 → 只报错，不锁死
-          const isConflict =
-            index >= FIXED_NAV_HREFS.length &&
             FIXED_NAV_HREFS.includes(canonicalHref);
 
           const labelError = linkErrors?.[index]?.label?.message;
@@ -328,6 +323,10 @@ function NavLinksEditor() {
                 <div className="relative min-w-0 flex-1">
                   <input
                     {...register(`site.navLinks.${index}.href`, {
+                      onChange: () => {
+                        // 用户输入时清除旧错误，避免红字残留
+                        clearErrors(`site.navLinks.${index}.href`);
+                      },
                       onBlur: (event) => {
                         if (isFixed) return;
                         const next = canonicalizeNavHref(event.target.value);
@@ -342,13 +341,7 @@ function NavLinksEditor() {
                         const canonical = canonicalizeNavHref(
                           typeof value === "string" ? value : "",
                         );
-                        // 【临时排查】打印校验的输入值
-                        console.log("【validate】", {
-                          index,
-                          value,
-                          canonical,
-                          isFixed: FIXED_NAV_HREFS.includes(canonical),
-                        });
+                        // 新加项填了固定项链接 → 报错
                         if (
                           index >= FIXED_NAV_HREFS.length &&
                           FIXED_NAV_HREFS.includes(canonical)
@@ -387,11 +380,9 @@ function NavLinksEditor() {
                   </button>
                 )}
               </div>
-              {labelError || hrefError || isConflict ? (
+              {labelError || hrefError ? (
                 <p className="text-xs text-(--fuwari-danger-fg)">
-                  {hrefError ||
-                    labelError ||
-                    (isConflict ? "此链接与固定导航项重复，请换一个" : null)}
+                  {hrefError || labelError}
                 </p>
               ) : null}
             </div>
