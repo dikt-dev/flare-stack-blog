@@ -29,9 +29,12 @@ import {
   SOCIAL_PLATFORM_KEYS,
   SOCIAL_PLATFORMS,
 } from "@/features/config/utils/social-platforms";
+import {
+  extractImageKey,
+  getOriginalImageUrl,
+} from "@/features/media/utils/media.utils";
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
-import { getOriginalImageUrl, extractImageKey } from "@/features/media/utils/media.utils";
 
 const IMAGE_ACCEPT = ".png,.webp,.jpg,.jpeg";
 const ICON_ACCEPT = ".svg,.ico,.png,.webp";
@@ -75,14 +78,17 @@ const ICON_FIELDS = [
   },
 ];
 
-import { getOriginalImageUrl, extractImageKey } from "@/features/media/utils/media.utils";
-
+/**
+ * 把设置里的图片路径转成可预览的 URL
+ * - 相对路径（/asset/xxx 或 /images/xxx）→ 走 CDN 域名
+ * - 完整 URL（https://...）→ 原样返回
+ */
 function previewSrc(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   if (!trimmed) return null;
 
-  // 相对路径（/asset/xxx 或 /images/xxx）→ 转成 CDN 域名
+  // 相对路径转 CDN 域名
   if (trimmed.startsWith("/")) {
     const key = extractImageKey(trimmed);
     if (key) return getOriginalImageUrl(key);
