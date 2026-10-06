@@ -6,7 +6,9 @@ import { SettingsNav } from "./settings-nav";
 import type { SettingsPageId } from "./settings-pages";
 import { m } from "@/paraglide/messages";
 import "./settings.css";
+
 const FORM_ID = "system-config-form";
+
 export function SettingsShell({
   title,
   nav,
@@ -80,9 +82,15 @@ export function SettingsShell({
               </button>
             )}
             <button
-              type="submit"
-              form={FORM_ID}
+              type="button"
               disabled={save.disabled || save.busy}
+              onClick={() => {
+                // 手动触发 form 的 submit，兼容移动端
+                const form = document.getElementById(
+                  FORM_ID,
+                ) as HTMLFormElement | null;
+                form?.requestSubmit();
+              }}
               className="settings-button fuwari-btn-primary"
             >
               {saveLabel}
@@ -93,4 +101,5 @@ export function SettingsShell({
     </div>
   );
 }
+
 export { FORM_ID as SETTINGS_FORM_ID };
