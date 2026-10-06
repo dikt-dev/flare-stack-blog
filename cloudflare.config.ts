@@ -55,20 +55,18 @@ export default defineConfig((ctx) => {
               }),
             ]),
       ],
-env: {
-  DB: bindings.d1({ id: d1DatabaseId }),
-  KV: bindings.kv({ id: kvNamespaceId }),
-  R2: bindings.r2({ name: bucketName }),
-  IMAGES: bindings.images({}),
-  QUEUE: bindings.queue({ name: queueName }),
+      env: {
+        DB: bindings.d1({ id: d1DatabaseId }),
+        KV: bindings.kv({ id: kvNamespaceId }),
+        R2: bindings.r2({ name: bucketName }),
+        IMAGES: bindings.images({}),
+        QUEUE: bindings.queue({ name: queueName }),
 
-  // 普通变量用 text 或 secret 格式
-  DOMAIN: { type: "text", value: "ryn.us.ci" },
-  BETTER_AUTH_URL: { type: "text", value: "https://ryn.us.ci" },
-  GITHUB_CLIENT_ID: { type: "secret", value: env.GITHUB_CLIENT_ID },
-},
-       GITHUB_CLIENT_ID: { value: env.GITHUB_CLIENT_ID },
-},
+        // 普通变量用 text 或 secret 格式
+        DOMAIN: { type: "text", value: "ryn.us.ci" },
+        BETTER_AUTH_URL: { type: "text", value: "https://ryn.us.ci" },
+        GITHUB_CLIENT_ID: { type: "secret", value: env.GITHUB_CLIENT_ID },
+      },
       // Durable Objects are reached through `exports` from `cloudflare:workers`,
       // so they need no binding. Once deployed this way, rolling back to a
       // `migrations`-based wrangler config is rejected.
