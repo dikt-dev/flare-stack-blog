@@ -6,11 +6,10 @@ export async function putToR2(
   key = generateKey(image.name),
 ) {
   const contentType = image.type;
-  const r2Key = `images/${key}`;
-
   let body: ReadableStream | File;
   let finalContentType = contentType;
   let finalSize = image.size;
+  let finalKey = key;
 
   // GIF 动图跳过压缩，保持原格式
   if (contentType === "image/gif") {
@@ -25,7 +24,12 @@ export async function putToR2(
     body = response.body!;
     finalContentType = "image/webp";
     finalSize = parseInt(response.headers.get("content-length") || "0", 10);
+    // 把扩展名改成 .webp
+    finalKey = key.replace(/\.[^.]+$/, ".webp");
   }
+
+  // 统一加 images/ 前缀
+  const r2Key = `images/${finalKey}`;
 
   await env.R2.put(r2Key, body, {
     httpMetadata: {
@@ -38,7 +42,7 @@ export async function putToR2(
 
   return {
     key: r2Key,
-    url: `https://img.ryn.us.ci/${r2Key}`, // 直连 R2 自定义域名
+    url: `https://img.ryn.us.ci/${r2Key}`,
     fileName: image.name,
     mimeType: finalContentType,
     sizeInBytes: finalSize || image.size,
