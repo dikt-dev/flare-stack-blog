@@ -10,7 +10,11 @@ export const blogConfig = {
     { platform: "email", url: "mailto:example@email.com" },
     { platform: "rss", url: "/rss.xml" },
   ],
-  navLinks: [],
+  navLinks: [
+  { label: "主页", href: "/" },
+  { label: "文章", href: "/posts" },
+  { label: "友链", href: "/friend-links" },
+],
   icons: {
     faviconSvg: "/favicon.svg",
     faviconIco: "/favicon.ico",
