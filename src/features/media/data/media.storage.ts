@@ -1,5 +1,8 @@
 import { generateKey } from "@/features/media/utils/media.utils";
 
+// 图片缓存策略：公开、1 年、内容不可变
+const IMAGE_CACHE_CONTROL = "public, max-age=31536000, immutable";
+
 export async function putToR2(
   env: Env,
   image: File,
@@ -29,13 +32,18 @@ export async function putToR2(
   const r2Key = `images/${finalKey}`;
 
   await env.R2.put(r2Key, body, {
-    httpMetadata: { contentType: finalContentType },
-    customMetadata: { originalName: image.name },
+    httpMetadata: {
+      contentType: finalContentType,
+      cacheControl: IMAGE_CACHE_CONTROL,
+    },
+    customMetadata: {
+      originalName: image.name,
+    },
   });
 
   return {
-    key: finalKey,                          // 返回纯文件名
-    url: `https://img.ryn.us.ci/images/${finalKey}`,  // 完整访问地址
+    key: finalKey, // 返回纯文件名
+    url: `https://img.ryn.us.ci/images/${finalKey}`, // 完整访问地址
     fileName: image.name,
     mimeType: finalContentType,
     sizeInBytes: finalSize || image.size,
@@ -63,7 +71,9 @@ export async function putSiteAsset(
   await env.R2.put(key, file.stream(), {
     httpMetadata: {
       contentType: file.type,
+      cacheControl: IMAGE_CACHE_CONTROL,
     },
   });
-  return { key, url: `/asset/${assetPath}` };  // 不带 images/
+  // 返回不带 images/ 的相对路径
+  return { key, url: `/asset/${assetPath}` };
 }
