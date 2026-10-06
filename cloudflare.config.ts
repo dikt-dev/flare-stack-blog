@@ -62,6 +62,10 @@ export default defineConfig((ctx) => {
         IMAGES: bindings.images({}),
         QUEUE: bindings.queue({ name: queueName }),
       },
+"vars": {
+  "BETTER_AUTH_URL": "https://ryn.us.ci",
+  "DOMAIN": "ryn.us.ci"
+},
       // Durable Objects are reached through `exports` from `cloudflare:workers`,
       // so they need no binding. Once deployed this way, rolling back to a
       // `migrations`-based wrangler config is rejected.
