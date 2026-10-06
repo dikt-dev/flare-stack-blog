@@ -267,12 +267,12 @@ function NavLinksEditor() {
       <div className="site-nav-fields">
         {fields.map((field, index) => {
           const href = watch(`site.navLinks.${index}.href`) ?? "";
+          const label = watch(`site.navLinks.${index}.label`) ?? "";
           const canonicalHref = canonicalizeNavHref(href);
 
-          // 只有前 3 项且 href 匹配固定项时，才视为固定项（只读、不可删）
+          // 固定项判定：href 匹配固定项，且 label 非空（排除用户新加的项）
           const isFixed =
-            index < FIXED_NAV_HREFS.length &&
-            FIXED_NAV_HREFS.includes(canonicalHref);
+            FIXED_NAV_HREFS.includes(canonicalHref) && !!label;
 
           const labelError = linkErrors?.[index]?.label?.message;
           const hrefError = linkErrors?.[index]?.href?.message;
@@ -341,11 +341,8 @@ function NavLinksEditor() {
                         const canonical = canonicalizeNavHref(
                           typeof value === "string" ? value : "",
                         );
-                        // 新加项填了固定项链接 → 报错
-                        if (
-                          index >= FIXED_NAV_HREFS.length &&
-                          FIXED_NAV_HREFS.includes(canonical)
-                        ) {
+                        // 用户新加的项（label 为空）填了固定项链接 → 报错
+                        if (!label && FIXED_NAV_HREFS.includes(canonical)) {
                           return "此链接与固定导航项重复，请换一个";
                         }
                         return true;
