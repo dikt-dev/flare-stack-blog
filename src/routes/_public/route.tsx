@@ -42,22 +42,12 @@ function PublicLayout() {
     authClient.useSession();
   const { logout } = useLogout();
 
-  const navOptions = [
-    { id: "home", label: m.nav_home(), href: "/", external: false },
-    { id: "posts", label: m.nav_posts(), href: "/posts", external: false },
-    {
-      id: "friend-links",
-      label: m.nav_friend_links(),
-      href: "/friend-links",
-      external: false,
-    },
-    ...siteConfig.navLinks.map((link, index) => ({
-      id: `custom-${index}`,
-      label: link.label,
-      href: link.href,
-      external: isExternalNavHref(link.href),
-    })),
-  ];
+  const navOptions = siteConfig.navLinks.map((link, index) => ({
+  id: `custom-${index}`,
+  label: link.label,
+  href: link.href,
+  external: isExternalNavHref(link.href),
+}));
 
   // Global shortcut: Cmd/Ctrl + K to navigate to search
   useEffect(() => {
