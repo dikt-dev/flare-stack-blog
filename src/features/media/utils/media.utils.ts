@@ -20,7 +20,7 @@ export function generateKey(fileName: string): string {
 }
 
 /**
- * 从图片 URL 中提取 R2 key
+ * 从图片 URL 中提取 R2 key（纯文件名，不含 images/ 前缀）
  * 支持格式：
  * - /images/${key}
  * - https://img.ryn.us.ci/images/${key}
@@ -29,7 +29,6 @@ export function generateKey(fileName: string): string {
 export function extractImageKey(src: string): string | undefined {
   if (!src) return undefined;
 
-  // 同时支持旧的相对路径和新的 CDN 域名
   const prefixes = ["/images/", "https://img.ryn.us.ci/images/"];
   let pathname = "";
 
@@ -41,8 +40,9 @@ export function extractImageKey(src: string): string | undefined {
   }
 
   for (const prefix of prefixes) {
-    // 对于完整域名，要匹配 pathname 部分
-    const matchPath = prefix.startsWith("http") ? new URL(prefix).pathname : prefix;
+    const matchPath = prefix.startsWith("http")
+      ? new URL(prefix).pathname
+      : prefix;
     if (pathname.startsWith(matchPath)) {
       return pathname.replace(matchPath, "");
     }
@@ -75,8 +75,7 @@ export function hasImageTransformParams(searchParams: URLSearchParams) {
 }
 
 export function getOptimizedImageUrl(key: string, width?: number) {
-  // 压缩已经在 putToR2 中完成，这里直接返回 CDN 地址
-  // 不再追加 ?quality= 之类的参数（R2 直连不走 Worker 转换）
+  // 图片压缩已在 putToR2 中完成，直接返回 CDN 地址
   return `https://img.ryn.us.ci/images/${key}`;
 }
 
@@ -86,7 +85,6 @@ export function getPublicImageSrc(src: string, width: number) {
   const version = new URL(src, "http://dummy.com").searchParams.get("v");
   const optimized = getOptimizedImageUrl(key, width);
   if (!version) return optimized;
-  // 加上版本号避免缓存问题
   return `${optimized}?v=${version}`;
 }
 
