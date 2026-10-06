@@ -18,7 +18,7 @@ export async function putToR2(
     // 非 GIF 图片转换为 WebP
     const response = (
       await env.IMAGES.input(image.stream())
-        .output({ format: "image/webp", quality: 82 })
+        .output({ format: "image/webp", quality: 70 })
     ).response();
 
     body = response.body!;
@@ -72,5 +72,5 @@ export async function putSiteAsset(
       contentType: file.type,
     },
   });
-  return { key, url: `/images/${key}` };
+  return { key, url: `https://img.ryn.us.ci/${key}` };
 }
