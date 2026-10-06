@@ -318,6 +318,16 @@ function NavLinksEditor() {
                 <div className="relative min-w-0 flex-1">
                   <input
                     {...register(`site.navLinks.${index}.href`, {
+                      validate: (value) => {
+                        const canonical = canonicalizeNavHref(
+                          typeof value === "string" ? value : "",
+                        );
+                        // 非固定项，却填了固定项的链接 → 报错
+                        if (!isFixed && FIXED_NAV_HREFS.includes(canonical)) {
+                          return "此链接与固定导航项重复，请换一个";
+                        }
+                        return true;
+                      },
                       onBlur: (event) => {
                         if (isFixed) return;
                         const next = canonicalizeNavHref(event.target.value);
@@ -346,7 +356,6 @@ function NavLinksEditor() {
                   ) : null}
                 </div>
                 {isFixed ? (
-                  // 固定项占位，保持布局对齐
                   <div className="h-10 w-10 shrink-0" aria-hidden="true" />
                 ) : (
                   <button
