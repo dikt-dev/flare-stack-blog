@@ -82,6 +82,7 @@ const ICON_FIELDS = [
  * 把设置里的图片路径转成可预览的 URL
  * - 相对路径（/asset/xxx 或 /images/xxx）→ 走 CDN 域名
  * - 完整 URL（https://...）→ 原样返回
+ * - 保留 ?v= 版本号，方便换图后自动刷新 CDN 缓存
  */
 function previewSrc(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -91,7 +92,12 @@ function previewSrc(value: unknown): string | null {
   // 相对路径转 CDN 域名
   if (trimmed.startsWith("/")) {
     const key = extractImageKey(trimmed);
-    if (key) return getOriginalImageUrl(key);
+    if (key) {
+      const url = getOriginalImageUrl(key);
+      // 保留版本号参数，避免换图后 CDN 返回旧缓存
+      const version = new URL(trimmed, "http://dummy.com").searchParams.get("v");
+      return version ? `${url}?v=${version}` : url;
+    }
     return trimmed;
   }
 
