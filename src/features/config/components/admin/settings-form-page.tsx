@@ -1,5 +1,4 @@
 import { useBlocker } from "@tanstack/react-router";
-import { toast } from "sonner";
 import ConfirmationModal from "@/components/ui/confirmation-modal";
 import { ConfigEditingContext } from "./config-editing";
 import { m } from "@/paraglide/messages";
@@ -75,11 +74,7 @@ export function SettingsSectionFrame({
               <>
                 <form
                   id={SETTINGS_FORM_ID}
-                  onSubmit={methods.handleSubmit(onSubmit, (errors) => {
-                    // 校验失败：弹个 toast 提醒用户
-                    console.warn("表单校验失败:", errors);
-                    toast.error("表单有错误，请检查标红的字段");
-                  })}
+                  onSubmit={onSubmit}
                   className="contents"
                 >
                   {isLoading ? <SettingsInnerSkeleton /> : children}
