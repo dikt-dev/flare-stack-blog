@@ -11,38 +11,31 @@ export async function putToR2(
   let finalSize = image.size;
   let finalKey = key;
 
-  // GIF 动图跳过压缩，保持原格式
   if (contentType === "image/gif") {
     body = image;
   } else {
-    // 非 GIF 图片转换为 WebP
     const response = (
       await env.IMAGES.input(image.stream())
-        .output({ format: "image/webp", quality: 70 })
+        .output({ format: "image/webp", quality: 82 })
     ).response();
 
     body = response.body!;
     finalContentType = "image/webp";
     finalSize = parseInt(response.headers.get("content-length") || "0", 10);
-    // 把扩展名改成 .webp
     finalKey = key.replace(/\.[^.]+$/, ".webp");
   }
 
-  // 统一加 images/ 前缀
+  // 上传到 R2 时加 images/ 前缀（存储路径）
   const r2Key = `images/${finalKey}`;
 
   await env.R2.put(r2Key, body, {
-    httpMetadata: {
-      contentType: finalContentType,
-    },
-    customMetadata: {
-      originalName: image.name,
-    },
+    httpMetadata: { contentType: finalContentType },
+    customMetadata: { originalName: image.name },
   });
 
   return {
-    key: r2Key,
-    url: `https://img.ryn.us.ci/${r2Key}`,
+    key: finalKey,                          // 返回纯文件名
+    url: `https://img.ryn.us.ci/images/${finalKey}`,  // 完整访问地址
     fileName: image.name,
     mimeType: finalContentType,
     sizeInBytes: finalSize || image.size,
