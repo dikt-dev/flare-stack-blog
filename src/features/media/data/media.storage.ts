@@ -65,5 +65,5 @@ export async function putSiteAsset(
       contentType: file.type,
     },
   });
-  return { key, url: `https://img.ryn.us.ci/${key}` };
+  return { key, url: `/asset/${assetPath}` };  // 不带 images/
 }
