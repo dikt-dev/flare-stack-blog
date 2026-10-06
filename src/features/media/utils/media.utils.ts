@@ -23,35 +23,33 @@ export function generateKey(fileName: string): string {
  * 从图片 URL 中提取 R2 key
  * 支持格式：
  * - /images/${key}
+ * - https://img.ryn.us.ci/images/${key}
  * - /images/${key}?quality=80&format=webp
- * - https://domain.com/images/${key}?quality=80
  */
 export function extractImageKey(src: string): string | undefined {
   if (!src) return undefined;
 
-  const prefix = "/images/";
+  // 同时支持旧的相对路径和新的 CDN 域名
+  const prefixes = ["/images/", "https://img.ryn.us.ci/images/"];
   let pathname = "";
 
   try {
-    // 尝试解析为 URL
-    const url = new URL(src, "http://dummy.com"); // 传入 base 确保相对路径也能被解析
+    const url = new URL(src, "http://dummy.com");
     pathname = url.pathname;
   } catch {
-    // 极少数情况解析失败，手动截断 query
     pathname = src.split("?")[0];
   }
 
-  if (pathname.startsWith(prefix)) {
-    return pathname.replace(prefix, "");
+  for (const prefix of prefixes) {
+    // 对于完整域名，要匹配 pathname 部分
+    const matchPath = prefix.startsWith("http") ? new URL(prefix).pathname : prefix;
+    if (pathname.startsWith(matchPath)) {
+      return pathname.replace(matchPath, "");
+    }
   }
   return undefined;
 }
 
-/**
- * 生成优化后的图片 URL
- * @param key - R2 key
- * @param width - 可选的宽度限制
- */
 export function isGifKey(key: string, contentType?: string | null) {
   return key.toLowerCase().endsWith(".gif") || contentType === "image/gif";
 }
@@ -64,7 +62,7 @@ export const PUBLIC_IMAGE_WIDTH = {
 } as const;
 
 export function getOriginalImageUrl(key: string) {
-  return `/images/${key}`;
+  return `https://img.ryn.us.ci/images/${key}`;
 }
 
 export function hasImageTransformParams(searchParams: URLSearchParams) {
@@ -77,10 +75,9 @@ export function hasImageTransformParams(searchParams: URLSearchParams) {
 }
 
 export function getOptimizedImageUrl(key: string, width?: number) {
-  if (isGifKey(key)) {
-    return `/images/${key}?original=true`;
-  }
-  return `/images/${key}?quality=80${width ? `&width=${width}` : ""}`;
+  // 压缩已经在 putToR2 中完成，这里直接返回 CDN 地址
+  // 不再追加 ?quality= 之类的参数（R2 直连不走 Worker 转换）
+  return `https://img.ryn.us.ci/images/${key}`;
 }
 
 export function getPublicImageSrc(src: string, width: number) {
@@ -89,9 +86,8 @@ export function getPublicImageSrc(src: string, width: number) {
   const version = new URL(src, "http://dummy.com").searchParams.get("v");
   const optimized = getOptimizedImageUrl(key, width);
   if (!version) return optimized;
-  const next = new URL(optimized, "http://dummy.com");
-  next.searchParams.set("v", version);
-  return `${next.pathname}${next.search}`;
+  // 加上版本号避免缓存问题
+  return `${optimized}?v=${version}`;
 }
 
 export function buildTransformOptions(
