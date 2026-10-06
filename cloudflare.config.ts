@@ -2,12 +2,6 @@ import { bindings, defineConfig, exports, triggers } from "cf/config";
 import { getDomain } from "tldts";
 import * as entrypoint from "./src/server" with { type: "cf-worker" };
 
-// Loaded by Node >= 22.18 (Vite, Vitest and `cf`), never by Bun.
-//
-// Deployment values come from real environment variables, which Workers Builds
-// exposes as build variables (`.env` is not read here). The placeholders keep
-// `bun dev`, tests and CI working without any Cloudflare resources. The fixed
-// UUID is what `bun db:migrate:local` targets, so it must stay a valid D1 id.
 const env = process.env;
 const workerName = env.WORKER_NAME?.trim() || "worker-name-placeholder";
 const queueName = env.QUEUE_NAME?.trim() || "queue-name-placeholder";
@@ -22,7 +16,6 @@ const useRoutes = ["1", "true", "yes", "on"].includes(
 );
 
 export default defineConfig((ctx) => {
-  // Tests only produce to the queue; a consumer would race their assertions.
   const isTest = ctx.mode === "test";
 
   return {
@@ -61,16 +54,10 @@ export default defineConfig((ctx) => {
         R2: bindings.r2({ name: bucketName }),
         IMAGES: bindings.images({}),
         QUEUE: bindings.queue({ name: queueName }),
+        DOMAIN: { type: "text", value: "ryn.us.ci" },
+        BETTER_AUTH_URL: { type: "text", value: "https://ryn.us.ci" },
+        GITHUB_CLIENT_ID: { type: "text", value: env.GITHUB_CLIENT_ID },
       },
-      // ➕ 新增：将非敏感的普通变量（vars）声明在代码里，避免被部署覆盖
-      vars: {
-        BETTER_AUTH_URL: env.BETTER_AUTH_URL?.trim() || "https://ryn.us.ci",
-        DOMAIN: env.DOMAIN?.trim() || "ryn.us.ci",
-        GITHUB_CLIENT_ID: env.GITHUB_CLIENT_ID?.trim() || "", // 建议去 Cloudflare 后台设置为构建变量
-      },
-      // Durable Objects are reached through `exports` from `cloudflare:workers`,
-      // so they need no binding. Once deployed this way, rolling back to a
-      // `migrations`-based wrangler config is rejected.
       exports: {
         default: exports.worker({ cache: { enabled: false } }),
         App: exports.worker({ cache: { enabled: true } }),
