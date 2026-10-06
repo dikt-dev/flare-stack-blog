@@ -51,7 +51,13 @@ export function resolveSiteConfig(
     author: config?.site?.author ?? blogConfig.author,
     description: config?.site?.description ?? blogConfig.description,
     social: migrateSocial(config?.site?.social),
-    navLinks: normalizeNavLinks(config?.site?.navLinks),
+    navLinks: (() => {
+  const normalized = normalizeNavLinks(config?.site?.navLinks);
+  // 数据库里没有导航时，用默认配置兜底
+  return normalized.length > 0
+    ? normalized
+    : normalizeNavLinks(blogConfig.navLinks);
+})(),
     icons: {
       faviconSvg:
         config?.site?.icons?.faviconSvg || blogConfig.icons.faviconSvg,
