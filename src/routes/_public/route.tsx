@@ -12,7 +12,6 @@ import { authClient } from "@/lib/auth/auth.client";
 import { CACHE_CONTROL } from "@/lib/constants";
 import { clientEnv } from "@/lib/env/client.env";
 import { isExternalNavHref } from "@/features/config/utils/nav-links";
-import { m } from "@/paraglide/messages";
 
 export const Route = createFileRoute("/_public")({
   component: PublicLayout,
