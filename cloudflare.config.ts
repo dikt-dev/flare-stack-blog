@@ -62,6 +62,12 @@ export default defineConfig((ctx) => {
         IMAGES: bindings.images({}),
         QUEUE: bindings.queue({ name: queueName }),
       },
+      // ➕ 新增：将非敏感的普通变量（vars）声明在代码里，避免被部署覆盖
+      vars: {
+        BETTER_AUTH_URL: env.BETTER_AUTH_URL?.trim() || "https://ryn.us.ci",
+        DOMAIN: env.DOMAIN?.trim() || "ryn.us.ci",
+        GITHUB_CLIENT_ID: env.GITHUB_CLIENT_ID?.trim() || "", // 建议去 Cloudflare 后台设置为构建变量
+      },
       // Durable Objects are reached through `exports` from `cloudflare:workers`,
       // so they need no binding. Once deployed this way, rolling back to a
       // `migrations`-based wrangler config is rejected.
