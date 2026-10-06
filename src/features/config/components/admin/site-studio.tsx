@@ -31,6 +31,7 @@ import {
 } from "@/features/config/utils/social-platforms";
 import { cn } from "@/lib/utils";
 import { m } from "@/paraglide/messages";
+import { getOriginalImageUrl, extractImageKey } from "@/features/media/utils/media.utils";
 
 const IMAGE_ACCEPT = ".png,.webp,.jpg,.jpeg";
 const ICON_ACCEPT = ".svg,.ico,.png,.webp";
@@ -74,11 +75,22 @@ const ICON_FIELDS = [
   },
 ];
 
+import { getOriginalImageUrl, extractImageKey } from "@/features/media/utils/media.utils";
+
 function previewSrc(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   if (!trimmed) return null;
-  if (trimmed.startsWith("/") || /^https?:\/\//.test(trimmed)) return trimmed;
+
+  // 相对路径（/asset/xxx 或 /images/xxx）→ 转成 CDN 域名
+  if (trimmed.startsWith("/")) {
+    const key = extractImageKey(trimmed);
+    if (key) return getOriginalImageUrl(key);
+    return trimmed;
+  }
+
+  // 完整 URL 直接返回
+  if (/^https?:\/\//.test(trimmed)) return trimmed;
   return null;
 }
 
