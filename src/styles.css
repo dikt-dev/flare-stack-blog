@@ -608,6 +608,16 @@
     }
   }
 
+  /* 正文段落首行缩进：中文排版两个汉字宽度 */
+  p {
+    text-indent: 2em;
+  }
+  /* 引用块、表格单元格内的段落不需要缩进 */
+  blockquote p,
+  :is(th, td) > p {
+    text-indent: 0;
+  }
+
   .fuwari-table-scroll {
     overflow-x: auto;
   }
