@@ -74,7 +74,7 @@ export function SettingsSectionFrame({
               <>
                 <form
                   id={SETTINGS_FORM_ID}
-                  onSubmit={methods.handleSubmit(onSubmit)}
+                  onSubmit={onSubmit}
                   className="contents"
                 >
                   {isLoading ? <SettingsInnerSkeleton /> : children}
