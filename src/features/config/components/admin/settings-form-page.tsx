@@ -49,8 +49,6 @@ export function SettingsSectionFrame({
     isLoading,
   );
 
-  // An outgoing child can still render after the pathname points to the
-  // directory. Keep its form context alive for the entire settings layout.
   return (
     <ConfigEditingContext.Provider value={{ ...baseline, dirtySections }}>
       <FormProvider {...methods}>
@@ -76,7 +74,7 @@ export function SettingsSectionFrame({
               <>
                 <form
                   id={SETTINGS_FORM_ID}
-                  onSubmit={onSubmit}
+                  onSubmit={methods.handleSubmit(onSubmit)}
                   className="contents"
                 >
                   {isLoading ? <SettingsInnerSkeleton /> : children}
