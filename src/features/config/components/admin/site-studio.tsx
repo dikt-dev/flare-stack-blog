@@ -268,7 +268,17 @@ function NavLinksEditor() {
         {fields.map((field, index) => {
           const href = watch(`site.navLinks.${index}.href`) ?? "";
           const canonicalHref = canonicalizeNavHref(href);
-          const isFixed = FIXED_NAV_HREFS.includes(canonicalHref);
+
+          // 前 3 项且 href 匹配固定项时，视为固定项（只读、不可删）
+          const isFixed =
+            index < FIXED_NAV_HREFS.length &&
+            FIXED_NAV_HREFS.includes(canonicalHref);
+
+          // 新加项填了固定项链接 → 只报错，不锁死
+          const isConflict =
+            index >= FIXED_NAV_HREFS.length &&
+            FIXED_NAV_HREFS.includes(canonicalHref);
+
           const labelError = linkErrors?.[index]?.label?.message;
           const hrefError = linkErrors?.[index]?.href?.message;
           return (
@@ -318,16 +328,6 @@ function NavLinksEditor() {
                 <div className="relative min-w-0 flex-1">
                   <input
                     {...register(`site.navLinks.${index}.href`, {
-                      validate: (value) => {
-                        const canonical = canonicalizeNavHref(
-                          typeof value === "string" ? value : "",
-                        );
-                        // 非固定项，却填了固定项的链接 → 报错
-                        if (!isFixed && FIXED_NAV_HREFS.includes(canonical)) {
-                          return "此链接与固定导航项重复，请换一个";
-                        }
-                        return true;
-                      },
                       onBlur: (event) => {
                         if (isFixed) return;
                         const next = canonicalizeNavHref(event.target.value);
@@ -337,6 +337,19 @@ function NavLinksEditor() {
                             shouldValidate: true,
                           });
                         }
+                      },
+                      validate: (value) => {
+                        const canonical = canonicalizeNavHref(
+                          typeof value === "string" ? value : "",
+                        );
+                        // 新加项填了固定项链接 → 只报错，不锁死
+                        if (
+                          index >= FIXED_NAV_HREFS.length &&
+                          FIXED_NAV_HREFS.includes(canonical)
+                        ) {
+                          return "此链接与固定导航项重复，请换一个";
+                        }
+                        return true;
                       },
                     })}
                     aria-label={m.settings_site_nav_url()}
@@ -368,9 +381,11 @@ function NavLinksEditor() {
                   </button>
                 )}
               </div>
-              {labelError || hrefError ? (
+              {labelError || hrefError || isConflict ? (
                 <p className="text-xs text-(--fuwari-danger-fg)">
-                  {hrefError || labelError}
+                  {hrefError ||
+                    labelError ||
+                    (isConflict ? "此链接与固定导航项重复，请换一个" : null)}
                 </p>
               ) : null}
             </div>
