@@ -39,6 +39,9 @@ import { m } from "@/paraglide/messages";
 const IMAGE_ACCEPT = ".png,.webp,.jpg,.jpeg";
 const ICON_ACCEPT = ".svg,.ico,.png,.webp";
 
+/** 固定导航项（不可编辑、不可删除，但可拖动排序） */
+const FIXED_NAV_HREFS = ["/", "/posts", "/friend-links"];
+
 const ICON_FIELDS = [
   {
     name: "site.icons.faviconSvg" as const,
@@ -89,19 +92,16 @@ function previewSrc(value: unknown): string | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
 
-  // 相对路径转 CDN 域名
   if (trimmed.startsWith("/")) {
     const key = extractImageKey(trimmed);
     if (key) {
       const url = getOriginalImageUrl(key);
-      // 保留版本号参数，避免换图后 CDN 返回旧缓存
       const version = new URL(trimmed, "http://dummy.com").searchParams.get("v");
       return version ? `${url}?v=${version}` : url;
     }
     return trimmed;
   }
 
-  // 完整 URL 直接返回
   if (/^https?:\/\//.test(trimmed)) return trimmed;
   return null;
 }
@@ -268,6 +268,7 @@ function NavLinksEditor() {
         {fields.map((field, index) => {
           const href = watch(`site.navLinks.${index}.href`) ?? "";
           const canonicalHref = canonicalizeNavHref(href);
+          const isFixed = FIXED_NAV_HREFS.includes(canonicalHref);
           const labelError = linkErrors?.[index]?.label?.message;
           const hrefError = linkErrors?.[index]?.href?.message;
           return (
@@ -308,12 +309,17 @@ function NavLinksEditor() {
                   {...register(`site.navLinks.${index}.label`)}
                   placeholder={m.settings_site_nav_label_ph()}
                   aria-label={m.settings_site_nav_name()}
-                  className={SETTINGS_FIELD_CLASS}
+                  className={cn(
+                    SETTINGS_FIELD_CLASS,
+                    isFixed && "opacity-60 cursor-not-allowed",
+                  )}
+                  readOnly={isFixed}
                 />
                 <div className="relative min-w-0 flex-1">
                   <input
                     {...register(`site.navLinks.${index}.href`, {
                       onBlur: (event) => {
+                        if (isFixed) return;
                         const next = canonicalizeNavHref(event.target.value);
                         if (next !== event.target.value) {
                           setValue(`site.navLinks.${index}.href`, next, {
@@ -328,23 +334,30 @@ function NavLinksEditor() {
                     className={cn(
                       SETTINGS_FIELD_CLASS,
                       isExternalNavHref(canonicalHref) && "pr-10",
+                      isFixed && "opacity-60 cursor-not-allowed",
                     )}
+                    readOnly={isFixed}
                   />
-                  {isExternalNavHref(canonicalHref) ? (
+                  {isExternalNavHref(canonicalHref) && !isFixed ? (
                     <ExternalLink
                       size={14}
                       className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 fuwari-text-30"
                     />
                   ) : null}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => remove(index)}
-                  className="h-10 w-10 rounded-xl fuwari-text-50 hover:text-(--fuwari-danger-fg) grid place-items-center shrink-0"
-                  aria-label={m.settings_site_nav_remove()}
-                >
-                  <Trash2 size={16} />
-                </button>
+                {isFixed ? (
+                  // 固定项占位，保持布局对齐
+                  <div className="h-10 w-10 shrink-0" aria-hidden="true" />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => remove(index)}
+                    className="h-10 w-10 rounded-xl fuwari-text-50 hover:text-(--fuwari-danger-fg) grid place-items-center shrink-0"
+                    aria-label={m.settings_site_nav_remove()}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
               {labelError || hrefError ? (
                 <p className="text-xs text-(--fuwari-danger-fg)">
