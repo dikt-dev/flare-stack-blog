@@ -61,10 +61,12 @@ export default defineConfig((ctx) => {
         R2: bindings.r2({ name: bucketName }),
         IMAGES: bindings.images({}),
         QUEUE: bindings.queue({ name: queueName }),
+      },
+    vars: {
         DOMAIN: "ryn.us.ci",
         BETTER_AUTH_URL: "https://ryn.us.ci",
-        GITHUB_CLIENT_ID: env.GITHUB_CLIENT_ID, 
-      },
+        GITHUB_CLIENT_ID: env.GITHUB_CLIENT_ID,
+    },
       // Durable Objects are reached through `exports` from `cloudflare:workers`,
       // so they need no binding. Once deployed this way, rolling back to a
       // `migrations`-based wrangler config is rejected.
