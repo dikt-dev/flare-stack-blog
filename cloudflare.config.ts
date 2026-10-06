@@ -59,6 +59,7 @@ export default defineConfig((ctx) => {
         DB: bindings.d1({ id: d1DatabaseId }),
         KV: bindings.kv({ id: kvNamespaceId }),
         R2: bindings.r2({ name: bucketName }),
+        IMAGES: bindings.images({}),
         QUEUE: bindings.queue({ name: queueName }),
       },
       // Durable Objects are reached through `exports` from `cloudflare:workers`,
