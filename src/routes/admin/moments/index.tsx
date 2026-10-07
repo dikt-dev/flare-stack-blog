@@ -12,6 +12,7 @@ import {
   SORT_FIELDS,
   STATUS_FILTERS,
 } from "@/features/posts/components/post-manager/types";
+import { m } from "@/paraglide/messages";
 
 const searchSchema = z.object({
   page: z.number().int().positive().optional().default(1).catch(1),
@@ -43,7 +44,7 @@ export const Route = createFileRoute("/admin/moments/")({
         }),
       ),
     );
-    return { title: "动态管理" };
+    return { title: m.admin_moments_title() };
   },
   component: PostManagerPage,
 });
@@ -91,7 +92,13 @@ function PostManagerPage() {
       }
       onSearchChange={(newSearch) => updateSearch({ search: newSearch })}
       onResetFilters={handleResetFilters}
-      fixedCategoryId={2}   // ← 动态分类
+      fixedCategoryId={2}
+      labels={{
+        title: m.admin_moments_title(),
+        create: m.admin_moments_create(),
+        creating: m.admin_moments_creating(),
+        total: (count) => m.admin_moments_total({ count }),
+      }}
     />
   );
 }
