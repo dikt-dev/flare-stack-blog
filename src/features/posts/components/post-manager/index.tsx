@@ -27,7 +27,7 @@ interface PostManagerProps {
   onSortByChange: (sortBy: SortField) => void;
   onSearchChange: (search: string) => void;
   onResetFilters: () => void;
-  fixedCategoryId?: number;   // ← 新增
+  fixedCategoryId?: number;
 }
 
 export function PostManager({
@@ -40,7 +40,7 @@ export function PostManager({
   onSortByChange,
   onSearchChange,
   onResetFilters,
-  fixedCategoryId,   // ← 新增
+  fixedCategoryId,
 }: PostManagerProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -92,7 +92,7 @@ export function PostManager({
     status,
     sortBy,
     search,
-    categoryId: fixedCategoryId,   // ← 新增
+    categoryId: fixedCategoryId,
   });
   const contentRef = useRef<HTMLTableSectionElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -116,6 +116,8 @@ export function PostManager({
       onPageChange(Math.max(1, totalPages));
   }, [page, totalPages, isPending, isPlaceholderData, error, onPageChange]);
 
+  const editBasePath = fixedCategoryId === 2 ? "/admin/moments" : "/admin/posts";   // ← 新增
+
   const createMutation = useMutation({
     mutationFn: async () => {
       const post = await orpcClient.posts.admin.create();
@@ -132,10 +134,8 @@ export function PostManager({
       void queryClient.invalidateQueries({
         queryKey: orpc.posts.admin.list.key(),
       });
-      // 根据当前分类决定跳转路径
-      const basePath = fixedCategoryId === 2 ? "/admin/moments" : "/admin/posts";
       void navigate({
-        to: `${basePath}/edit/$id`,
+        to: `${editBasePath}/edit/$id`,
         params: { id: String(post.id) },
       });
     },
@@ -252,6 +252,7 @@ export function PostManager({
                           deleteTriggerRef.current = trigger;
                           setPostToDelete(target);
                         }}
+                        editBasePath={editBasePath}   // ← 新增
                       />
                     ))
                   )}
