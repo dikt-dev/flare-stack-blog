@@ -24,7 +24,7 @@ export function MomentCard({ post }: MomentCardProps) {
           to="/post/$slug"
           params={{ slug: post.slug }}
           aria-label={post.title}
-          className="group relative w-full aspect-[16/9] max-h-64 overflow-hidden"
+          className="group relative w-full aspect-[16/9] overflow-hidden"
         >
           <div className="absolute pointer-events-none z-10 w-full h-full group-hover:bg-black/20 transition" />
           <img
@@ -32,7 +32,7 @@ export function MomentCard({ post }: MomentCardProps) {
             alt={post.title}
             width={post.cover.width ?? undefined}
             height={post.cover.height ?? undefined}
-            className="w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover"
           />
         </Link>
       ) : null}
