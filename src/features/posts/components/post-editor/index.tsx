@@ -11,10 +11,7 @@ import { CodeBlockHighlightProvider } from "@/features/posts/editor/extensions/c
 import { postContentOf } from "@/features/posts/editor/extensions/image-placeholder";
 import { postRevisionListQuery } from "@/features/posts/queries";
 import { normalizePostContent } from "@/features/posts/utils/normalize-content";
-import {
-  extractFirstImageSrc,
-  extractSummary,
-} from "@/features/posts/utils/extract-from-content";
+import { extractSummary } from "@/features/posts/utils/extract-from-content";
 import { m } from "@/paraglide/messages";
 import { useAutoSave, usePostActions } from "./hooks";
 import { PostEditorHeader } from "./post-editor-header";
@@ -65,48 +62,30 @@ export function PostEditor({
     return editorContentRef.current;
   }, []);
 
-  // 保存时自动填充摘要和封面
-  const handleSaveWithAutoFill = useCallback(
-    async (data: PostEditorData) => {
-      const content = getContent();
-      let nextData = { ...data };
-
-      // 摘要为空 → 自动从正文提取
-      if (!nextData.summary?.trim() && content) {
-        const summary = extractSummary(content);
-        if (summary) {
-          nextData = { ...nextData, summary };
-          // 同步更新 UI
-          setPost((prev) => ({ ...prev, summary }));
-        }
-      }
-
-      // 封面为空 → 自动从正文第一张图提取
-      if (!nextData.coverMediaId && content) {
-        const src = extractFirstImageSrc(content);
-        if (src) {
-          // TODO: 从 src 反查媒体 ID，补全 coverMediaId 和 cover
-          // 暂时只记录日志，等确认 API 后再实现
-          console.warn("自动填充封面暂未实现，图片 src:", src);
-        }
-      }
-
-      await onSave(nextData);
-    },
-    [getContent, onSave],
-  );
-
   const { saveStatus, lastSaved, setError, flush } = useAutoSave({
     post,
     getContent,
     contentEpoch,
-    onSave: handleSaveWithAutoFill,
+    onSave,
   });
 
   const { proceed, reset, status } = useBlocker({
     shouldBlockFn: () => saveStatus !== "SYNCED",
     withResolver: true,
   });
+
+  // 发布前自动填充摘要（如果为空）
+  const handleBeforePublish = useCallback(async () => {
+    const content = getContent();
+    if (content && !post.summary?.trim()) {
+      const summary = extractSummary(content);
+      if (summary) {
+        setPost((prev) => ({ ...prev, summary }));
+        // 等 React 状态更新 + 自动保存
+        await new Promise((r) => setTimeout(r, 0));
+      }
+    }
+  }, [getContent, post.summary]);
 
   const {
     isGeneratingSlug,
@@ -122,6 +101,7 @@ export function PostEditor({
     setPost,
     setError,
     flush,
+    beforePublish: handleBeforePublish,   // ← 新增
   });
 
   const handleEditorCreated = useCallback((editor: TiptapEditor | null) => {
