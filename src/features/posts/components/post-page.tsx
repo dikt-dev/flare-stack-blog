@@ -69,9 +69,7 @@ export function PostPage({ post }: PostPageProps) {
                 <div className="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 fuwari-text-50 flex items-center justify-center mr-2">
                   <Pencil strokeWidth={1.5} size={16} />
                 </div>
-                <div className="text-sm">
-                  {isMoment ? m.post_edit() : m.post_edit()}
-                </div>
+                <div className="text-sm">{m.post_edit()}</div>
               </Link>
             )}
           </ClientOnly>
@@ -107,7 +105,8 @@ export function PostPage({ post }: PostPageProps) {
           )}
         </div>
 
-        {post.cover && (
+        {/* 封面：动态不显示 */}
+        {!isMoment && post.cover && (
           <div
             id="post-cover"
             className="mb-8 rounded-xl overflow-hidden fuwari-onload-animation"
@@ -127,8 +126,8 @@ export function PostPage({ post }: PostPageProps) {
           </div>
         )}
 
-        {/* Summary */}
-        <PostSummary summary={post.summary} />
+        {/* 摘要：动态不显示 */}
+        {!isMoment && <PostSummary summary={post.summary} />}
 
         {/* Markdown Content */}
         <div
