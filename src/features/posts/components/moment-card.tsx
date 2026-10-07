@@ -41,12 +41,19 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
           </div>
         ) : null}
 
-        {/* 内容区：无封面时增加最小高度并垂直居中，使卡片占地面积与有封面卡片接近 */}
+        {/* 内容区 */}
         <div
-          className={`flex flex-col gap-4 px-7 py-8 ${
-            !hasCover ? "min-h-[300px] justify-center" : ""
+          className={`flex flex-col gap-5 px-7 py-12 ${
+            !hasCover ? "min-h-[220px]" : ""
           }`}
         >
+          {/* 无封面时的装饰引号，增加视觉层次 */}
+          {!hasCover && (
+            <div className="text-3xl text-(--fuwari-primary) opacity-30 font-serif leading-none mb-1 select-none">
+              “
+            </div>
+          )}
+
           {/* 标题：只有有标题时才显示 */}
           {hasTitle && (
             <Link
@@ -88,7 +95,7 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
           )}
 
           {/* 时间和标签 */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs fuwari-text-50 pt-3 border-t border-(--fuwari-meta-divider) border-dashed">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs fuwari-text-50 pt-4 border-t border-(--fuwari-meta-divider) border-dashed mt-auto">
             <span className="inline-flex items-center gap-1">
               <Calendar size={13} />
               {formatPublicPostDate(post.publishedAt)}
