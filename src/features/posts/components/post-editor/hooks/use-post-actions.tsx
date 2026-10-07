@@ -1,217 +1,316 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useBlocker, useNavigate } from "@tanstack/react-router";
+import type { JSONContent, Editor as TiptapEditor } from "@tiptap/react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { PostEditorData } from "@/features/posts/components/post-editor/types";
-import { slugify } from "@/features/posts/utils/content";
-import { orpc, orpcClient } from "@/lib/orpc";
-import { useDebounce } from "@/hooks/use-debounce";
+import { useAdminChrome } from "@/components/admin/admin-chrome";
+import { Editor } from "@/components/tiptap-editor";
+import ConfirmationModal from "@/components/ui/confirmation-modal";
+import { extensions } from "@/features/posts/editor/config";
+import { CodeBlockHighlightProvider } from "@/features/posts/editor/extensions/code-block/code-block-highlight-context";
+import { postContentOf } from "@/features/posts/editor/extensions/image-placeholder";
+import { postRevisionListQuery } from "@/features/posts/queries";
+import { normalizePostContent } from "@/features/posts/utils/normalize-content";
+import { extractSummary } from "@/features/posts/utils/extract-from-content";
 import { m } from "@/paraglide/messages";
-import {
-  BLOB_UPLOADING_ERROR,
-  shouldAutogenerateSlug,
-} from "../post-editor.model";
+import { useAutoSave, usePostActions } from "./hooks";
+import { PostEditorHeader } from "./post-editor-header";
+import { PostEditorMetadata } from "./post-editor-metadata";
+import { PostEditorInfoPanel } from "./post-editor-info-panel";
+import { PostEditorSummary } from "./post-editor-summary";
+import type { PostEditorData, PostEditorProps } from "./types";
 
-interface UsePostActionsOptions {
-  postId: number;
-  post: PostEditorData;
-  setPost: React.Dispatch<React.SetStateAction<PostEditorData>>;
-  setError: (error: string | null) => void;
-  flush: () => Promise<void>;
-}
-
-export function usePostActions({
-  postId,
-  post,
-  setPost,
-  setError,
-  flush,
-}: UsePostActionsOptions) {
+export function PostEditor({
+  initialData,
+  onSave,
+  fixedCategoryId,
+}: PostEditorProps) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { setPrimaryAction, setMobileTitle } = useAdminChrome();
+  const [infoOpen, setInfoOpen] = useState(false);
+  const closeInfo = useCallback(() => setInfoOpen(false), []);
+  const [post, setPost] = useState<PostEditorData>(() => ({
+    title: initialData.title,
+    summary: initialData.summary,
+    slug: initialData.slug,
+    contentJson: normalizePostContent(initialData.contentJson) ?? null,
+    publishedAt: initialData.publishedAt,
+    pinnedAt: initialData.pinnedAt,
+    tagIds: initialData.tagIds,
+    categoryId: initialData.categoryId,
+    hasPublicSnapshot: initialData.hasPublicSnapshot,
+    serverToday: initialData.serverToday,
+    coverMediaId: initialData.coverMediaId,
+    cover: initialData.cover,
+  }));
+  const [editorContent] = useState<JSONContent | null>(
+    () => normalizePostContent(initialData.contentJson) ?? null,
+  );
+  const [contentEpoch, setContentEpoch] = useState(0);
+  const [editorRenderKey] = useState(`editor:${initialData.id}`);
 
-  const [processState, setProcessState] = useState<
-    "IDLE" | "PROCESSING" | "SUCCESS"
-  >("IDLE");
+  const editorRef = useRef<TiptapEditor | null>(null);
+  const editorContentRef = useRef(editorContent);
+  editorContentRef.current = editorContent;
 
-  const canPublish = useMemo(() => {
-    if (!post.publishedAt) return true;
-    return post.publishedAt.toISOString().slice(0, 10) <= post.serverToday;
-  }, [post.publishedAt, post.serverToday]);
+  // 标记是否正在发布（发布时触发自动填充）
+  const isPublishingRef = useRef(false);
 
-  const lastAutoSlugRef = useRef<string | null>(null);
-  const queuedTitleRef = useRef<string | null>(null);
-  const prevTitleRef = useRef(post.title);
-  const isFirstTitleMount = useRef(true);
-  const slugGenerationMode = useRef<"manual" | "auto">("manual");
-  const latestSlugRef = useRef(post.slug);
-  const latestTitleRef = useRef(post.title);
-  const publishedRef = useRef(false);
-  latestSlugRef.current = post.slug;
-  latestTitleRef.current = post.title;
-  // `publishedAt` arrives on reload after the first publish and survives an
-  // unpublish; `hasPublicSnapshot` covers the session that first publishes.
-  publishedRef.current = post.hasPublicSnapshot || post.publishedAt !== null;
-  const debouncedTitle = useDebounce(post.title, 500);
+  const getContent = useCallback(() => {
+    const editor = editorRef.current;
+    if (editor && !editor.isDestroyed) {
+      return postContentOf(editor.state.doc);
+    }
+    return editorContentRef.current;
+  }, []);
 
-  const invalidatePostQueries = () => {
-    void queryClient.invalidateQueries({
-      queryKey: orpc.posts.admin.get.key({ input: { id: postId } }),
-    });
-    void queryClient.invalidateQueries({
-      queryKey: orpc.posts.admin.list.key(),
-    });
-    void queryClient.invalidateQueries({ queryKey: orpc.posts.list.key() });
-  };
+  // 保存时：只在「发布流程中」自动填充
+  const handleSaveWithAutoFill = useCallback(
+    async (data: PostEditorData) => {
+      const content = getContent();
+      let nextData = { ...data };
 
-  const publishMutation = useMutation({
-    mutationFn: () => orpcClient.posts.admin.publish({ id: postId }),
-    onSuccess: () => {
-      toast.success(m.editor_header_publish());
-      setPost((prev) => ({ ...prev, hasPublicSnapshot: true }));
-      setProcessState("SUCCESS");
-      invalidatePostQueries();
-      setTimeout(() => {
-        setProcessState("IDLE");
-      }, 3000);
+      // 只在发布时触发自动填充
+      if (isPublishingRef.current && content) {
+        const currentSummary = nextData.summary?.trim() ?? "";
+        const wasPublished = data.hasPublicSnapshot || data.publishedAt !== null;
+
+        // 首次发布：摘要为空 → 自动填充
+        // 再次发布：摘要为空，或正文变了 → 重新提取
+        const shouldFill = !currentSummary || wasPublished;
+
+        if (shouldFill) {
+          const summary = extractSummary(content);
+          if (summary) {
+            nextData = { ...nextData, summary };
+            setPost((prev) => ({ ...prev, summary }));
+          }
+        }
+      }
+
+      await onSave(nextData);
     },
-    onError: () => {
-      toast.error(m.editor_action_publish_failed());
-      setProcessState("IDLE");
-    },
+    [getContent, onSave],
+  );
+
+  const { saveStatus, lastSaved, setError, flush } = useAutoSave({
+    post,
+    getContent,
+    contentEpoch,
+    onSave: handleSaveWithAutoFill,
   });
 
-  const unpublishMutation = useMutation({
-    mutationFn: () => orpcClient.posts.admin.unpublish({ id: postId }),
-    onSuccess: () => {
-      toast.success(m.editor_header_unpublish());
-      setPost((prev) => ({ ...prev, hasPublicSnapshot: false }));
-      setProcessState("SUCCESS");
-      invalidatePostQueries();
-      setTimeout(() => {
-        setProcessState("IDLE");
-      }, 3000);
-    },
-    onError: () => {
-      toast.error(m.editor_action_unpublish_failed());
-      setProcessState("IDLE");
-    },
+  const { proceed, reset, status } = useBlocker({
+    shouldBlockFn: () => saveStatus !== "SYNCED",
+    withResolver: true,
   });
 
-  const unpublish = unpublishMutation.mutate;
-
-  const handlePublish = useCallback(async () => {
-    if (processState !== "IDLE") return;
-    setProcessState("PROCESSING");
-    try {
-      await flush();
-    } catch (error) {
-      const message =
-        error instanceof Error && error.message === BLOB_UPLOADING_ERROR
-          ? m.editor_action_image_uploading()
-          : m.editor_action_publish_failed();
-      toast.error(message);
-      setProcessState("IDLE");
-      return;
-    }
-    publishMutation.mutate();
-  }, [flush, processState, publishMutation]);
-
-  const handleUnpublish = useCallback(() => {
-    if (processState !== "IDLE") return;
-    setProcessState("PROCESSING");
-    unpublish();
-  }, [processState, unpublish]);
-
-  const slugMutation = useMutation({
-    mutationFn: (title: string) =>
-      orpcClient.posts.admin.generateSlug({
-        title,
-        excludeId: postId,
-      }),
-    onSuccess: (result) => {
-      lastAutoSlugRef.current = result.slug;
-      setPost((prev) => ({ ...prev, slug: result.slug }));
-      if (slugGenerationMode.current === "manual") {
-        toast.success(m.editor_action_slug_set(), {
-          description: m.editor_action_slug_set_desc({ slug: result.slug }),
-        });
-      }
-    },
-    onSettled: (_data, error) => {
-      if (error) {
-        console.error("Slug generation failed:", error);
-        setError(m.editor_action_slug_error());
-        const fallbackSlug = slugify(latestTitleRef.current) || "untitled-log";
-        lastAutoSlugRef.current = fallbackSlug;
-        setPost((prev) => ({ ...prev, slug: fallbackSlug }));
-      }
-      const queuedTitle = queuedTitleRef.current;
-      queuedTitleRef.current = null;
-      if (
-        queuedTitle &&
-        shouldAutogenerateSlug(
-          latestSlugRef.current,
-          lastAutoSlugRef.current,
-          publishedRef.current,
-        )
-      ) {
-        slugGenerationMode.current = "auto";
-        slugMutation.mutate(queuedTitle);
-      }
-    },
-  });
-
-  const lockSlug = () => {
-    lastAutoSlugRef.current = null;
-  };
-
-  useEffect(() => {
-    if (isFirstTitleMount.current) {
-      isFirstTitleMount.current = false;
-      prevTitleRef.current = debouncedTitle;
-      return;
-    }
-
-    if (debouncedTitle === prevTitleRef.current) {
-      return;
-    }
-    prevTitleRef.current = debouncedTitle;
-
-    if (!debouncedTitle.trim()) {
-      return;
-    }
-    if (
-      !shouldAutogenerateSlug(
-        latestSlugRef.current,
-        lastAutoSlugRef.current,
-        publishedRef.current,
-      )
-    ) {
-      return;
-    }
-    if (slugMutation.isPending) {
-      queuedTitleRef.current = debouncedTitle;
-      return;
-    }
-    slugGenerationMode.current = "auto";
-    slugMutation.mutate(debouncedTitle);
-  }, [debouncedTitle, slugMutation]);
-
-  const handleGenerateSlug = () => {
-    if (!post.title.trim()) {
-      setError(m.editor_action_title_empty());
-      return;
-    }
-    slugGenerationMode.current = "manual";
-    slugMutation.mutate(post.title);
-  };
-
-  return {
-    isGeneratingSlug: slugMutation.isPending,
+  const {
+    isGeneratingSlug,
     handleGenerateSlug,
     handlePublish,
     handleUnpublish,
     processState,
     canPublish,
     lockSlug,
-  };
+  } = usePostActions({
+    postId: initialData.id,
+    post,
+    setPost,
+    setError,
+    flush,
+    beforePublish: async () => {
+      isPublishingRef.current = true;
+    },
+    afterPublish: () => {
+      isPublishingRef.current = false;
+    },
+  });
+
+  const handleEditorCreated = useCallback((editor: TiptapEditor | null) => {
+    editorRef.current = editor;
+  }, []);
+
+  const handleEditorUpdate = useCallback(() => {
+    setContentEpoch((epoch) => epoch + 1);
+  }, []);
+
+  const handlePostChange = useCallback(
+    (updates: Partial<PostEditorData>) => {
+      if (updates.slug !== undefined) {
+        lockSlug();
+      }
+      setPost((prev) => ({ ...prev, ...updates }));
+    },
+    [lockSlug],
+  );
+
+  const openHistory = useCallback(async () => {
+    try {
+      await flush();
+    } catch {
+      toast.error(m.editor_status_save_error());
+      return;
+    }
+    const revisions = await queryClient.ensureQueryData(
+      postRevisionListQuery(initialData.id),
+    );
+    const desktop = window.matchMedia("(min-width: 1024px)").matches;
+    if (desktop && revisions[0]) {
+      await navigate({
+        to: "/admin/posts/edit/$id/history/$revisionId",
+        params: {
+          id: String(initialData.id),
+          revisionId: String(revisions[0].id),
+        },
+      });
+      return;
+    }
+    await navigate({
+      to: "/admin/posts/edit/$id/history",
+      params: { id: String(initialData.id) },
+    });
+  }, [flush, initialData.id, navigate, queryClient]);
+
+  const publishRef = useRef(handlePublish);
+  publishRef.current = handlePublish;
+
+  useEffect(() => {
+    if (infoOpen) {
+      setMobileTitle(m.editor_info_title());
+      setPrimaryAction({
+        label: m.editor_info_done(),
+        onClick: () => setInfoOpen(false),
+      });
+    } else {
+      setMobileTitle(post.title.trim() || m.common_untitled());
+      setPrimaryAction({
+        label:
+          processState === "PROCESSING"
+            ? m.editor_header_processing()
+            : m.editor_header_publish(),
+        onClick: () => {
+          void publishRef.current();
+        },
+        disabled: processState !== "IDLE" || !canPublish,
+      });
+    }
+  }, [
+    canPublish,
+    infoOpen,
+    post.title,
+    processState,
+    setMobileTitle,
+    setPrimaryAction,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      setMobileTitle(null);
+      setPrimaryAction(null);
+    };
+  }, [setMobileTitle, setPrimaryAction]);
+
+  const metadata = (
+    <PostEditorMetadata
+      post={post}
+      isGeneratingSlug={isGeneratingSlug}
+      onPostChange={handlePostChange}
+      onGenerateSlug={handleGenerateSlug}
+      fixedCategoryId={fixedCategoryId}
+    />
+  );
+
+  return (
+    <div className="flex h-full min-h-0 flex-1 flex-col">
+      <ConfirmationModal
+        isOpen={status === "blocked"}
+        onClose={() => reset?.()}
+        onConfirm={() => proceed?.()}
+        title={m.editor_leave_title()}
+        message={m.editor_leave_message()}
+        confirmLabel={m.editor_leave_confirm()}
+      />
+
+      <section className="post-editor-workspace fuwari-card-base">
+        <PostEditorHeader
+          saveStatus={saveStatus}
+          lastSaved={lastSaved}
+          processState={processState}
+          canPublish={canPublish}
+          hasPublicSnapshot={post.hasPublicSnapshot}
+          onPublish={handlePublish}
+          onUnpublish={handleUnpublish}
+          infoOpen={infoOpen}
+          onOpenInfo={() => setInfoOpen((value) => !value)}
+          onOpenHistory={() => void openHistory()}
+        />
+        <div className="post-editor-body">
+          <CodeBlockHighlightProvider
+            snapshotContent={initialData.publicSnapshotContentJson}
+          >
+            <Editor
+              key={editorRenderKey}
+              className="post-editor-surface"
+              toolbarClassName="post-editor-toolbar"
+              documentClassName="post-editor-document custom-scrollbar"
+              scrollContainerId="post-editor-scroll-container"
+              contentClassName="min-h-50"
+              documentHeader={
+                <>
+                  <TextareaTitle
+                    value={post.title}
+                    onChange={(title) => handlePostChange({ title })}
+                  />
+                  <PostEditorSummary
+                    categoryId={post.categoryId}
+                    tagIds={post.tagIds}
+                    hasCover={Boolean(post.cover)}
+                    onOpenInfo={() => setInfoOpen(true)}
+                  />
+                </>
+              }
+              extensions={extensions}
+              content={editorContent ?? ""}
+              onUpdate={handleEditorUpdate}
+              onCreated={handleEditorCreated}
+            />
+          </CodeBlockHighlightProvider>
+        </div>
+        <PostEditorInfoPanel open={infoOpen} onClose={closeInfo}>
+          {metadata}
+        </PostEditorInfoPanel>
+      </section>
+    </div>
+  );
+}
+
+function TextareaTitle({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (title: string) => void;
+}) {
+  return (
+    <textarea
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      rows={1}
+      placeholder={m.editor_title_placeholder()}
+      aria-label={m.editor_title_placeholder()}
+      className="post-editor-title w-full resize-none overflow-hidden bg-transparent fuwari-text-90 outline-none placeholder:fuwari-text-30"
+      onInput={(event) => {
+        const el = event.currentTarget;
+        el.style.height = "auto";
+        el.style.height = `${el.scrollHeight}px`;
+      }}
+      ref={(el) => {
+        if (!el) return;
+        el.style.height = "auto";
+        el.style.height = `${el.scrollHeight}px`;
+      }}
+    />
+  );
 }
