@@ -97,7 +97,7 @@ function PostManagerPage() {
         title: m.admin_moments_title(),
         create: m.admin_moments_create(),
         creating: m.admin_moments_creating(),
-        total: (count) => m.admin_moments_total({ count }),
+        total: (count) => String(m.admin_moments_total({ count })),   // ← 改成这样
       }}
     />
   );
