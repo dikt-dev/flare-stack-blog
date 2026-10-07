@@ -20,7 +20,7 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
   const hasTitle = Boolean(post.title?.trim());
 
   return (
-    // 修改1：给外层加上左右内边距，卡片就不会铺满屏幕，漏出下方背景
+    // 外层左右留白，漏出背景
     <div className="w-full px-4 sm:px-6">
       <div className="fuwari-card-base flex flex-col w-full rounded-(--fuwari-radius-large) overflow-hidden shadow-md hover:shadow-lg transition-shadow">
         {/* 封面：有封面时显示 */}
@@ -42,54 +42,104 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
           </div>
         ) : null}
 
-        {/* 内容区 */}
+        {/* 内容区：保持上下 padding，让卡片高度充足 */}
         <div
           className={`flex flex-col gap-4 px-7 py-12 ${
             !hasCover ? "min-h-[220px]" : ""
           }`}
         >
-          {/* 标题：只有有标题时才显示 */}
-          {hasTitle && (
-            <Link
-              to="/post/$slug"
-              params={{ slug: post.slug }}
-              className="group flex items-start gap-2"
-            >
-              <span className="text-xl font-bold fuwari-text-90 leading-snug group-hover:text-(--fuwari-primary) transition">
-                {post.title}
-              </span>
-              <ChevronRight
-                size={18}
-                className="mt-0.5 shrink-0 text-(--fuwari-primary) transition group-hover:translate-x-0.5"
-              />
-            </Link>
+          {/* 无封面时，使用绝对定位的引号装饰，不占竖直高度 */}
+          {!hasCover && (
+            <div className="relative">
+              {/* 绝对定位的引号，定位在左上角 */}
+              <div className="absolute -top-4 -left-1 text-3xl text-(--fuwari-primary) opacity-30 font-serif leading-none select-none pointer-events-none">
+                “
+              </div>
+              
+              {/* 标题和摘要都包在这个相对定位容器里，让引号只影响第一行 */}
+              {hasTitle && (
+                <Link
+                  to="/post/$slug"
+                  params={{ slug: post.slug }}
+                  className="group flex items-start gap-2 relative z-10"
+                >
+                  <span className="text-xl font-bold fuwari-text-90 leading-snug group-hover:text-(--fuwari-primary) transition">
+                    {post.title}
+                  </span>
+                  <ChevronRight
+                    size={18}
+                    className="mt-0.5 shrink-0 text-(--fuwari-primary) transition group-hover:translate-x-0.5"
+                  />
+                </Link>
+              )}
+
+              {post.summary ? (
+                <Link
+                  to="/post/$slug"
+                  params={{ slug: post.slug }}
+                  className="block relative z-10"
+                >
+                  <p
+                    className="fuwari-text-90 text-base leading-loose line-clamp-10 whitespace-pre-wrap"
+                    style={{ textIndent: "2em" }}
+                  >
+                    {post.summary}
+                  </p>
+                </Link>
+              ) : (
+                <p
+                  className="fuwari-text-75 text-sm leading-relaxed line-clamp-3 relative z-10"
+                  style={{ textIndent: "2em" }}
+                >
+                  {post.summary ?? m.post_card_no_summary()}
+                </p>
+              )}
+            </div>
           )}
 
-          {/* 摘要：没封面时放大当主要内容，首行缩进 */}
-          {!hasCover && post.summary ? (
-            <Link
-              to="/post/$slug"
-              params={{ slug: post.slug }}
-              className="block"
-            >
-              {/* 修改2：将刚才孤立的引号去掉，改为给段落加上左侧的装饰边框或者微调顶部间距，让文字紧凑向上 */}
-              <p
-                className="fuwari-text-90 text-base leading-loose line-clamp-10 whitespace-pre-wrap"
-                style={{ textIndent: "2em" }}
-              >
-                {post.summary}
-              </p>
-            </Link>
-          ) : (
-            <p
-              className="fuwari-text-75 text-sm leading-relaxed line-clamp-3"
-              style={{ textIndent: "2em" }}
-            >
-              {post.summary ?? m.post_card_no_summary()}
-            </p>
+          {/* 如果有封面（走到这里是 else 分支），保持原有显示逻辑 */}
+          {hasCover && (
+            <>
+              {hasTitle && (
+                <Link
+                  to="/post/$slug"
+                  params={{ slug: post.slug }}
+                  className="group flex items-start gap-2"
+                >
+                  <span className="text-xl font-bold fuwari-text-90 leading-snug group-hover:text-(--fuwari-primary) transition">
+                    {post.title}
+                  </span>
+                  <ChevronRight
+                    size={18}
+                    className="mt-0.5 shrink-0 text-(--fuwari-primary) transition group-hover:translate-x-0.5"
+                  />
+                </Link>
+              )}
+              {post.summary ? (
+                <Link
+                  to="/post/$slug"
+                  params={{ slug: post.slug }}
+                  className="block"
+                >
+                  <p
+                    className="fuwari-text-75 text-sm leading-relaxed line-clamp-3"
+                    style={{ textIndent: "2em" }}
+                  >
+                    {post.summary}
+                  </p>
+                </Link>
+              ) : (
+                <p
+                  className="fuwari-text-75 text-sm leading-relaxed line-clamp-3"
+                  style={{ textIndent: "2em" }}
+                >
+                  {m.post_card_no_summary()}
+                </p>
+              )}
+            </>
           )}
 
-          {/* 时间和标签：使用 mt-auto 确保底部信息顶在最下方，与内容形成上下呼应 */}
+          {/* 时间和标签 */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs fuwari-text-50 pt-4 border-t border-(--fuwari-meta-divider) border-dashed mt-auto">
             <span className="inline-flex items-center gap-1">
               <Calendar size={13} />
@@ -136,7 +186,7 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
         </div>
       </div>
 
-      {/* 卡片之间的虚线分割：因为两侧有了px-4，分割线也要加上同样的左右边距才对齐 */}
+      {/* 卡片之间的虚线分割，加上和卡片一致的左右边距 */}
       {!isLast && (
         <div className="my-3 border-t border-dashed border-(--fuwari-meta-divider) mx-4 sm:mx-6" />
       )}
