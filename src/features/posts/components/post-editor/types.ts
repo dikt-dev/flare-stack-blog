@@ -30,6 +30,7 @@ export interface PostEditorProps {
     publicSnapshotContentJson?: JSONContent | null;
   };
   onSave: (data: PostEditorData) => Promise<void>;
+  fixedCategoryId?: number;   // ← 新增
 }
 
 export type SaveStatus = "SYNCED" | "SAVING" | "PENDING" | "ERROR";
