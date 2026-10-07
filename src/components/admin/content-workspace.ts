@@ -1,7 +1,8 @@
 export function isAdminWorkspace(pathname: string) {
   return (
     /^\/admin(?:\/|$)/.test(pathname) &&
-    !pathname.startsWith("/admin/posts/edit/")
+    !pathname.startsWith("/admin/posts/edit/") &&
+    !pathname.startsWith("/admin/moments/edit/")   // ← 新增
   );
 }
 
