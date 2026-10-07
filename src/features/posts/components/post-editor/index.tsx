@@ -74,18 +74,21 @@ export function PostEditor({
     withResolver: true,
   });
 
-  // 动态发布前：直接填充摘要，触发保存
+  // 动态发布前：无条件把正文第一段填充到摘要
   const handleBeforePublish = useCallback(async () => {
     if (fixedCategoryId !== 2) return;
     const content = getContent();
-    if (!content) return;
-    const summary = extractSummary(content);
-    if (summary) {
+    const summary = content ? extractSummary(content) : null;
+    if (summary !== null) {
+      const nextData: PostEditorData = {
+        ...post,
+        summary,
+        contentJson: content,
+      };
+      await onSave(nextData);
       setPost((prev) => ({ ...prev, summary }));
-      // 等 React 状态更新
-      await new Promise((r) => setTimeout(r, 50));
     }
-  }, [getContent, fixedCategoryId]);
+  }, [getContent, fixedCategoryId, post, onSave]);
 
   const {
     isGeneratingSlug,
