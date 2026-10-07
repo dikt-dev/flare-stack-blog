@@ -19,7 +19,7 @@ import { tagsQueryOptions } from "@/features/tags/queries";
 import { buildCanonicalUrl, canonicalLink } from "@/lib/seo";
 
 // 动态页的分类 slug，要和后台创建的分类 slug 一致
-const MOMENTS_CATEGORY_SLUG = "moments";
+const MOMENTS_CATEGORY_SLUG = "动态";
 
 export const Route = createFileRoute("/_public/moments")({
   validateSearch: z.object({
