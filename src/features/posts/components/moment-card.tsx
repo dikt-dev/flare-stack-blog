@@ -41,8 +41,12 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
           </div>
         ) : null}
 
-        {/* 内容区：加大内边距，拉高卡片 */}
-        <div className="flex flex-col gap-4 px-7 py-8">
+        {/* 内容区：无封面时增加最小高度并垂直居中，使卡片占地面积与有封面卡片接近 */}
+        <div
+          className={`flex flex-col gap-4 px-7 py-8 ${
+            !hasCover ? "min-h-[300px] justify-center" : ""
+          }`}
+        >
           {/* 标题：只有有标题时才显示 */}
           {hasTitle && (
             <Link
