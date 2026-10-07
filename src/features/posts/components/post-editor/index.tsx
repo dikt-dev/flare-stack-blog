@@ -54,6 +54,9 @@ export function PostEditor({
   const editorContentRef = useRef(editorContent);
   editorContentRef.current = editorContent;
 
+  // 标记是否正在发布（发布时触发自动填充）
+  const isPublishingRef = useRef(false);
+
   const getContent = useCallback(() => {
     const editor = editorRef.current;
     if (editor && !editor.isDestroyed) {
@@ -62,22 +65,27 @@ export function PostEditor({
     return editorContentRef.current;
   }, []);
 
-  // 保存时自动填充摘要（只在已发布状态下生效）
+  // 保存时：只在「发布流程中」自动填充
   const handleSaveWithAutoFill = useCallback(
     async (data: PostEditorData) => {
       const content = getContent();
       let nextData = { ...data };
 
-      // 只对已发布的内容自动填充（首次发布后、再次编辑时生效）
-      const shouldAutoFill =
-        data.hasPublicSnapshot || data.publishedAt !== null;
+      // 只在发布时触发自动填充
+      if (isPublishingRef.current && content) {
+        const currentSummary = nextData.summary?.trim() ?? "";
+        const wasPublished = data.hasPublicSnapshot || data.publishedAt !== null;
 
-      if (shouldAutoFill && !nextData.summary?.trim() && content) {
-        const summary = extractSummary(content);
-        if (summary) {
-          nextData = { ...nextData, summary };
-          // 同步更新 UI
-          setPost((prev) => ({ ...prev, summary }));
+        // 首次发布：摘要为空 → 自动填充
+        // 再次发布：摘要为空，或正文变了 → 重新提取
+        const shouldFill = !currentSummary || wasPublished;
+
+        if (shouldFill) {
+          const summary = extractSummary(content);
+          if (summary) {
+            nextData = { ...nextData, summary };
+            setPost((prev) => ({ ...prev, summary }));
+          }
         }
       }
 
@@ -112,6 +120,12 @@ export function PostEditor({
     setPost,
     setError,
     flush,
+    beforePublish: async () => {
+      isPublishingRef.current = true;
+    },
+    afterPublish: () => {
+      isPublishingRef.current = false;
+    },
   });
 
   const handleEditorCreated = useCallback((editor: TiptapEditor | null) => {
