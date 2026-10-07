@@ -301,19 +301,25 @@ export async function getPostsCursor(
   return { items, nextCursor };
 }
 
-/**
- * 首页排除的分类 ID（2 是“动态”分类的 ID）
- */
-const HOME_EXCLUDED_CATEGORY_ID = 2;
-
-export async function getHomePosts(db: DB, requestedPage: number) {
+export async function getHomePosts(
+  db: DB,
+  requestedPage: number,
+  options: { excludeCategoryName?: string } = {},
+) {
+  const { excludeCategoryName } = options;
   const baseCondition = buildPostWhereClause({ publicOnly: true });
-  
-  // 通过分类 ID 直接排除“动态”分类
-  const whereClause = and(
-    baseCondition,
-    ne(PostsTable.categoryId, HOME_EXCLUDED_CATEGORY_ID)
-  );
+  const conditions: SQL[] = [];
+  if (baseCondition) conditions.push(baseCondition);
+  if (excludeCategoryName) {
+    conditions.push(
+      sql`NOT EXISTS (
+        SELECT 1 FROM ${CategoriesTable}
+        WHERE ${CategoriesTable.id} = ${PostsTable.categoryId}
+          AND ${CategoriesTable.name} = ${excludeCategoryName}
+      )`,
+    );
+  }
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
   const total = await db
     .select({ count: count() })
