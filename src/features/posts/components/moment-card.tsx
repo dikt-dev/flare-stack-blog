@@ -20,7 +20,8 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
   const hasTitle = Boolean(post.title?.trim());
 
   return (
-    <div className="w-full">
+    // 修改1：给外层加上左右内边距，卡片就不会铺满屏幕，漏出下方背景
+    <div className="w-full px-4 sm:px-6">
       <div className="fuwari-card-base flex flex-col w-full rounded-(--fuwari-radius-large) overflow-hidden shadow-md hover:shadow-lg transition-shadow">
         {/* 封面：有封面时显示 */}
         {hasCover && post.cover ? (
@@ -43,17 +44,10 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
 
         {/* 内容区 */}
         <div
-          className={`flex flex-col gap-5 px-7 py-12 ${
+          className={`flex flex-col gap-4 px-7 py-12 ${
             !hasCover ? "min-h-[220px]" : ""
           }`}
         >
-          {/* 无封面时的装饰引号，增加视觉层次 */}
-          {!hasCover && (
-            <div className="text-3xl text-(--fuwari-primary) opacity-30 font-serif leading-none mb-1 select-none">
-              “
-            </div>
-          )}
-
           {/* 标题：只有有标题时才显示 */}
           {hasTitle && (
             <Link
@@ -78,6 +72,7 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
               params={{ slug: post.slug }}
               className="block"
             >
+              {/* 修改2：将刚才孤立的引号去掉，改为给段落加上左侧的装饰边框或者微调顶部间距，让文字紧凑向上 */}
               <p
                 className="fuwari-text-90 text-base leading-loose line-clamp-10 whitespace-pre-wrap"
                 style={{ textIndent: "2em" }}
@@ -94,7 +89,7 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
             </p>
           )}
 
-          {/* 时间和标签 */}
+          {/* 时间和标签：使用 mt-auto 确保底部信息顶在最下方，与内容形成上下呼应 */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs fuwari-text-50 pt-4 border-t border-(--fuwari-meta-divider) border-dashed mt-auto">
             <span className="inline-flex items-center gap-1">
               <Calendar size={13} />
@@ -141,9 +136,9 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
         </div>
       </div>
 
-      {/* 卡片之间的虚线分割 */}
+      {/* 卡片之间的虚线分割：因为两侧有了px-4，分割线也要加上同样的左右边距才对齐 */}
       {!isLast && (
-        <div className="my-3 border-t border-dashed border-(--fuwari-meta-divider)" />
+        <div className="my-3 border-t border-dashed border-(--fuwari-meta-divider) mx-4 sm:mx-6" />
       )}
     </div>
   );
