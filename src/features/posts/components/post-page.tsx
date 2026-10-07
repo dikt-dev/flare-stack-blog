@@ -28,6 +28,10 @@ export function PostPage({ post }: PostPageProps) {
   // Approximate word count
   const wordCount = post.readTimeInMinutes * 300;
 
+  // 根据分类判断是动态还是文章
+  const isMoment = post.category?.name === "动态";
+  const editBasePath = isMoment ? "/admin/moments" : "/admin/posts";
+
   return (
     <div className="relative flex flex-col rounded-(--fuwari-radius-large) py-1 md:py-0 md:bg-transparent gap-4 mb-4 w-full">
       <TableOfContents headers={post.toc} />
@@ -58,14 +62,16 @@ export function PostPage({ post }: PostPageProps) {
           <ClientOnly>
             {session?.user.role === "admin" && (
               <Link
-                to="/admin/posts/edit/$id"
+                to={`${editBasePath}/edit/$id`}
                 params={{ id: String(post.id) }}
                 className="flex flex-row items-center fuwari-text-30 hover:fuwari-text-90 transition animate-in fade-in duration-500"
               >
                 <div className="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 fuwari-text-50 flex items-center justify-center mr-2">
                   <Pencil strokeWidth={1.5} size={16} />
                 </div>
-                <div className="text-sm">{m.post_edit()}</div>
+                <div className="text-sm">
+                  {isMoment ? m.post_edit() : m.post_edit()}
+                </div>
               </Link>
             )}
           </ClientOnly>
