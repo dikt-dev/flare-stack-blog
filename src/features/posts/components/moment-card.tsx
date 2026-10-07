@@ -21,7 +21,7 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
 
   return (
     <div className="w-full">
-      <div className="fuwari-card-base flex flex-col w-full rounded-(--fuwari-radius-large) overflow-hidden">
+      <div className="fuwari-card-base flex flex-col w-full rounded-(--fuwari-radius-large) overflow-hidden shadow-md hover:shadow-lg transition-shadow">
         {/* 封面：有封面时显示 */}
         {hasCover && post.cover ? (
           <div className="p-4 pb-0">
@@ -41,8 +41,8 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
           </div>
         ) : null}
 
-        {/* 内容区 */}
-        <div className="flex flex-col gap-3 p-5">
+        {/* 内容区：加大内边距，拉高卡片 */}
+        <div className="flex flex-col gap-4 px-7 py-8">
           {/* 标题：只有有标题时才显示 */}
           {hasTitle && (
             <Link
@@ -60,21 +60,31 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
             </Link>
           )}
 
-          {/* 摘要：没封面时放大当主要内容 */}
+          {/* 摘要：没封面时放大当主要内容，首行缩进 */}
           {!hasCover && post.summary ? (
-            <Link to="/post/$slug" params={{ slug: post.slug }} className="block">
-              <p className="fuwari-text-90 text-base leading-loose line-clamp-10 whitespace-pre-wrap">
+            <Link
+              to="/post/$slug"
+              params={{ slug: post.slug }}
+              className="block"
+            >
+              <p
+                className="fuwari-text-90 text-base leading-loose line-clamp-10 whitespace-pre-wrap"
+                style={{ textIndent: "2em" }}
+              >
                 {post.summary}
               </p>
             </Link>
           ) : (
-            <p className="fuwari-text-75 text-sm leading-relaxed line-clamp-3">
+            <p
+              className="fuwari-text-75 text-sm leading-relaxed line-clamp-3"
+              style={{ textIndent: "2em" }}
+            >
               {post.summary ?? m.post_card_no_summary()}
             </p>
           )}
 
           {/* 时间和标签 */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs fuwari-text-50 pt-2 border-t border-(--fuwari-meta-divider) border-dashed">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs fuwari-text-50 pt-3 border-t border-(--fuwari-meta-divider) border-dashed">
             <span className="inline-flex items-center gap-1">
               <Calendar size={13} />
               {formatPublicPostDate(post.publishedAt)}
