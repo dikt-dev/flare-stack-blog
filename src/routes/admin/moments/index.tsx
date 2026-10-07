@@ -97,7 +97,6 @@ function PostManagerPage() {
         title: m.admin_moments_title(),
         create: m.admin_moments_create(),
         creating: m.admin_moments_creating(),
-        total: (count) => `${count} 条动态`,
       }}
     />
   );
