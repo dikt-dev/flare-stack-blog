@@ -40,27 +40,15 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
           </div>
         ) : null}
 
-        {/* 内容区：没封面时加大间距，让文字占更多面积 */}
-        <div
-          className={
-            hasCover
-              ? "flex flex-col gap-2.5 p-5"
-              : "flex flex-col gap-3 p-6 py-8"
-          }
-        >
+        {/* 内容区 */}
+        <div className="flex flex-col gap-3 p-6">
           {/* 标题 */}
           <Link
             to="/post/$slug"
             params={{ slug: post.slug }}
             className="group flex items-start gap-2"
           >
-            <span
-              className={
-                hasCover
-                  ? "text-lg font-bold fuwari-text-90 leading-snug group-hover:text-(--fuwari-primary) transition"
-                  : "text-xl font-bold fuwari-text-90 leading-snug group-hover:text-(--fuwari-primary) transition"
-              }
-            >
+            <span className="text-xl font-bold fuwari-text-90 leading-snug group-hover:text-(--fuwari-primary) transition">
               {post.title}
             </span>
             <ChevronRight
@@ -69,8 +57,19 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
             />
           </Link>
 
-          {/* 日期 · 分类 · 标签 */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs fuwari-text-50">
+          {/* 摘要：没封面时放大当主要内容，有封面时保持原样 */}
+          {!hasCover && post.summary ? (
+            <p className="fuwari-text-90 text-base leading-loose line-clamp-8 whitespace-pre-wrap">
+              {post.summary}
+            </p>
+          ) : (
+            <p className="fuwari-text-75 text-sm leading-relaxed line-clamp-3">
+              {post.summary ?? m.post_card_no_summary()}
+            </p>
+          )}
+
+          {/* 时间和标签：放到下面 */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs fuwari-text-50 pt-2 border-t border-(--fuwari-meta-divider) border-dashed">
             <span className="inline-flex items-center gap-1">
               <Calendar size={13} />
               {formatPublicPostDate(post.publishedAt)}
@@ -102,21 +101,6 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
                 ))}
               </span>
             )}
-          </div>
-
-          {/* 摘要 */}
-          <p
-            className={
-              hasCover
-                ? "fuwari-text-75 text-sm leading-relaxed line-clamp-3"
-                : "fuwari-text-75 text-sm leading-relaxed line-clamp-6"
-            }
-          >
-            {post.summary ?? m.post_card_no_summary()}
-          </p>
-
-          {/* 阅读时间 · 浏览量 */}
-          <div className="flex items-center gap-3 text-xs fuwari-text-50">
             <span className="inline-flex items-center gap-1">
               <Clock size={12} />
               {m.read_time({ count: post.readTimeInMinutes })}
@@ -131,7 +115,7 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
         </div>
       </div>
 
-      {/* 卡片之间的虚线分割（最后一项不显示） */}
+      {/* 卡片之间的虚线分割 */}
       {!isLast && (
         <div className="my-3 border-t border-dashed border-(--fuwari-meta-divider)" />
       )}
