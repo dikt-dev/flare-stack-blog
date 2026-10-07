@@ -98,7 +98,7 @@ function AdminLayout() {
 }
 
 function isPostEditorPath(pathname: string) {
-  return /\/admin\/posts\/edit\/[^/]+/.test(pathname);
+  return /\/admin\/(posts|moments)\/edit\/[^/]+/.test(pathname);
 }
 
 function AdminMain() {
