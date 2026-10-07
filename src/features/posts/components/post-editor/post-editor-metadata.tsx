@@ -14,6 +14,7 @@ interface PostEditorMetadataProps {
   isGeneratingSlug: boolean;
   onPostChange: (updates: Partial<PostEditorData>) => void;
   onGenerateSlug: () => void;
+  fixedCategoryId?: number;   // ← 新增
 }
 
 export function PostEditorMetadata({
@@ -21,7 +22,9 @@ export function PostEditorMetadata({
   isGeneratingSlug,
   onPostChange,
   onGenerateSlug,
+  fixedCategoryId,
 }: PostEditorMetadataProps) {
+  const categoryLocked = fixedCategoryId !== undefined;
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 custom-scrollbar">
@@ -35,6 +38,7 @@ export function PostEditorMetadata({
           <CategorySelect
             value={post.categoryId}
             onChange={(categoryId) => onPostChange({ categoryId })}
+            disabled={categoryLocked}
           />
         </label>
 
