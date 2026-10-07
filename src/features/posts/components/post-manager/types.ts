@@ -25,3 +25,8 @@ export function statusFilterToApi(
   if (filter === "ALL") return undefined;
   return filter === "PUBLISHED" ? "published" : "draft";
 }
+/** 固定分类 ID（用于区分文章管理和动态管理） */
+export const FIXED_CATEGORY = {
+  posts: 1,   // 文章
+  moments: 2, // 动态
+} as const;
