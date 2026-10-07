@@ -150,7 +150,7 @@ export function getHomePosts(
   context: DbContext & { executionCtx: ExecutionContext },
   page: number,
 ) {
-  return homePosts.get(context, { page });
+  return homePosts.get(context, { page, excludeCategoryName: "动态" });
 }
 
 export async function getPinnedPosts(
