@@ -26,6 +26,7 @@
   "posts_title": "All Posts",
   "posts_no_posts": "No posts found",
   "posts_end": "You've reached the end",
+  "admin_sidebar_moments": "Moments",
   "posts_count": [
     {
       "declarations": ["input count", "local formattedCountEn = count: number"],
