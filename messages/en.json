@@ -31,6 +31,7 @@
   "admin_moments_create": "New moment",
   "admin_moments_creating": "Creating…",
   "admin_moments_total": "{count} moments",
+  "post_card_no_summary": "No summary",
   "posts_count": [
     {
       "declarations": ["input count", "local formattedCountEn = count: number"],
