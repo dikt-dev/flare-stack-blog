@@ -23,9 +23,16 @@ interface PostRowProps {
     post: AdminPostListItem,
     trigger: HTMLButtonElement | null,
   ) => void;
+  editBasePath?: string;   // ← 新增
 }
 
-export function PostRow({ post, sortBy, onDelete, editorState }: PostRowProps) {
+export function PostRow({
+  post,
+  sortBy,
+  onDelete,
+  editorState,
+  editBasePath = "/admin/posts",   // ← 默认文章路径
+}: PostRowProps) {
   const title = post.title.trim() || m.common_untitled();
   const date = post[sortBy];
   return (
@@ -38,7 +45,7 @@ export function PostRow({ post, sortBy, onDelete, editorState }: PostRowProps) {
             )}
           </span>
           <Link
-            to="/admin/posts/edit/$id"
+            to={`${editBasePath}/edit/$id`}
             params={{ id: String(post.id) }}
             state={editorState}
             className="post-list-title-link"
@@ -76,7 +83,7 @@ export function PostRow({ post, sortBy, onDelete, editorState }: PostRowProps) {
       <td>
         <div className="post-list-row-actions">
           <Link
-            to="/admin/posts/edit/$id"
+            to={`${editBasePath}/edit/$id`}
             params={{ id: String(post.id) }}
             state={editorState}
             aria-label={m.admin_posts_edit_named({ title })}
