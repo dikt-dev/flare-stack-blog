@@ -9,6 +9,7 @@ import { orpc, orpcClient } from "@/lib/orpc";
 import { ADMIN_ITEMS_PER_PAGE } from "@/lib/constants";
 import { useContentMotion } from "@/hooks/use-motion";
 import { m } from "@/paraglide/messages";
+import { getLocale } from "@/paraglide/runtime";
 import { PostRow, PostsToolbar } from "./components";
 import ConfirmationModal from "@/components/ui/confirmation-modal";
 import { useListScroll } from "./hooks/use-list-scroll";
@@ -21,7 +22,6 @@ interface PostManagerLabels {
   title: string;
   create: string;
   creating: string;
-  total: (count: number) => string;
 }
 
 interface PostManagerProps {
@@ -35,7 +35,7 @@ interface PostManagerProps {
   onSearchChange: (search: string) => void;
   onResetFilters: () => void;
   fixedCategoryId?: number;
-  labels?: PostManagerLabels;   // ← 新增
+  labels?: PostManagerLabels;   // ← 只剩 title/create/creating
 }
 
 export function PostManager({
@@ -125,13 +125,23 @@ export function PostManager({
       onPageChange(Math.max(1, totalPages));
   }, [page, totalPages, isPending, isPlaceholderData, error, onPageChange]);
 
-  const editBasePath = fixedCategoryId === 2 ? "/admin/moments" : "/admin/posts";
+  const editBasePath =
+    fixedCategoryId === 2 ? "/admin/moments" : "/admin/posts";
+  const isMoments = fixedCategoryId === 2;
 
   // 文案：优先用传入的 labels，否则用默认的"文章"文案
   const title = labels?.title ?? m.admin_posts_title();
   const createLabel = labels?.create ?? m.admin_posts_create();
   const creatingLabel = labels?.creating ?? m.admin_posts_creating();
-  const totalLabel = labels?.total ?? m.admin_posts_total;
+
+  // 统计文案：根据当前语言和分类类型动态拼接，不依赖 i18n
+  const totalLabel = (count: number) => {
+    const isEn = getLocale() === "en";
+    if (isMoments) {
+      return `${count} ${isEn ? "moments" : "条动态"}`;
+    }
+    return `${count} ${isEn ? "posts" : "篇文章"}`;
+  };
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -182,9 +192,7 @@ export function PostManager({
           <h1>{title}</h1>
           <p>
             {statusCounts
-              ? totalLabel({
-                  count: statusCounts.draft + statusCounts.published,
-                })
+              ? totalLabel(statusCounts.draft + statusCounts.published)
               : "—"}
             {isFetching && (
               <Loader2
@@ -300,7 +308,7 @@ export function PostManager({
             <p>
               {hasContentFilter
                 ? m.admin_posts_results({ count: totalCount })
-                : totalLabel({ count: totalCount })}
+                : totalLabel(totalCount)}
             </p>
           ) : (
             <AdminPagination
