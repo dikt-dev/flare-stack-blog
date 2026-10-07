@@ -4,6 +4,7 @@ import type { PostItem } from "@/features/posts/schema/posts.schema";
 import type { TagWithCount } from "@/features/tags/tags.schema";
 import { m } from "@/paraglide/messages";
 import { ArchivePanel } from "./archive/archive-panel";
+import { MomentCard } from "./moment-card";
 
 export const POSTS_PER_PAGE = 24;
 
@@ -15,6 +16,7 @@ interface PostsPageProps {
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   fetchNextPage: () => void;
+  variant?: "post" | "moment";
 }
 
 export function PostsPage({
@@ -22,6 +24,7 @@ export function PostsPage({
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
+  variant,
 }: PostsPageProps) {
   const observerRef = useRef<HTMLDivElement>(null);
 
@@ -47,16 +50,23 @@ export function PostsPage({
       className="fuwari-onload-animation flex flex-col gap-4"
       style={{ animationDelay: "var(--fuwari-content-delay)" }}
     >
-      {posts.length > 0 && <ArchivePanel posts={posts} />}
+      {posts.length > 0 &&
+        (variant === "moment" ? (
+          <div className="flex flex-col gap-4">
+            {posts.map((post) => (
+              <MomentCard key={post.id} post={post} />
+            ))}
+          </div>
+        ) : (
+          <ArchivePanel posts={posts} />
+        ))}
 
-      {/* Infinite Scroll trigger and loading indicator */}
       <div
         ref={observerRef}
         className="flex flex-col items-center justify-center pt-2 pb-8"
       >
         {isFetchingNextPage ? (
           <div className="fuwari-card-base w-full px-8 py-6 opacity-70 animate-pulse">
-            {/* Inline Mini Skeleton for appending items */}
             {Array.from({ length: 3 }).map((_, i) => (
               <div
                 key={i}
