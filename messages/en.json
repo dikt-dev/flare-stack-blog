@@ -27,6 +27,10 @@
   "posts_no_posts": "No posts found",
   "posts_end": "You've reached the end",
   "admin_sidebar_moments": "Moments",
+"admin_moments_title": "Moments",
+"admin_moments_create": "New moment",
+"admin_moments_creating": "Creating…",
+"admin_moments_total": "{count} moments",
   "posts_count": [
     {
       "declarations": ["input count", "local formattedCountEn = count: number"],
