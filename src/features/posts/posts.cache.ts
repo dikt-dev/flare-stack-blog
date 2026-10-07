@@ -20,11 +20,18 @@ const POST_PUBLIC_REASONS = [
 export const homePosts = defineEntry({
   name: "posts.home",
   namespace: "posts:home",
-  key: ({ page }: { page: number }) => ["posts", "home", page],
+  key: ({
+    page,
+    excludeCategoryName,
+  }: {
+    page: number;
+    excludeCategoryName?: string;
+  }) => ["posts", "home", excludeCategoryName ?? "all", page],
   schema: HomePostsResponseSchema,
   ttl: "7d",
   invalidatedBy: POST_PUBLIC_REASONS,
-  load: (context, { page }) => PostRepo.getHomePosts(context.db, page),
+  load: (context, { page, excludeCategoryName }) =>
+    PostRepo.getHomePosts(context.db, page, { excludeCategoryName }),
 });
 
 export const pinnedPosts = defineEntry({
