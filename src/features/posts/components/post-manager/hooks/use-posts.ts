@@ -18,6 +18,7 @@ interface UsePostsOptions {
   status: StatusFilter;
   sortBy: SortField;
   search: string;
+  categoryId?: number;   // ← 新增
 }
 
 export function adminPostsListParams({
@@ -25,6 +26,7 @@ export function adminPostsListParams({
   status,
   sortBy,
   search,
+  categoryId,   // ← 新增
 }: UsePostsOptions): GetPostsInput {
   return {
     offset: (page - 1) * ADMIN_ITEMS_PER_PAGE,
@@ -33,12 +35,29 @@ export function adminPostsListParams({
     sortDir: "DESC",
     sortBy,
     search: search || undefined,
+    ...(categoryId
+      ? {
+          taxonomy: {
+            kind: "category" as const,
+            id: categoryId,
+            scope: "current" as const,
+          },
+        }
+      : {}),
   };
 }
 
-export function usePosts({ page, status, sortBy, search }: UsePostsOptions) {
+export function usePosts({
+  page,
+  status,
+  sortBy,
+  search,
+  categoryId,
+}: UsePostsOptions) {
   const postsQuery = useQuery({
-    ...adminPostsQuery(adminPostsListParams({ page, status, sortBy, search })),
+    ...adminPostsQuery(
+      adminPostsListParams({ page, status, sortBy, search, categoryId }),
+    ),
     placeholderData: keepPreviousData,
   });
 
