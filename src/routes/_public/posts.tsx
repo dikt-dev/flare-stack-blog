@@ -13,38 +13,30 @@ import {
 import { PostsPageSkeleton } from "@/features/posts/components/posts-page-skeleton";
 import { categoriesQueryOptions } from "@/features/categories/queries";
 import { postsInfiniteQueryOptions } from "@/features/posts/queries";
-import {
-  PostCategoryNameSchema,
-  PostTagNameSchema,
-} from "@/features/posts/schema/posts.schema";
+import { PostTagNameSchema } from "@/features/posts/schema/posts.schema";
 import { withTagFilter } from "@/features/posts/utils/post-public-search";
 import { tagsQueryOptions } from "@/features/tags/queries";
 import { buildCanonicalUrl, canonicalLink } from "@/lib/seo";
 import { m } from "@/paraglide/messages";
 
+/** 文章页只显示「文章」分类的内容 */
+const POSTS_CATEGORY_NAME = "文章";
+
 export const Route = createFileRoute("/_public/posts")({
   validateSearch: z.object({
     tagName: PostTagNameSchema,
-    categoryName: PostCategoryNameSchema,
-    uncategorized: z
-      .union([z.boolean(), z.literal("true"), z.literal("false")])
-      .transform((value) => value === true || value === "true")
-      .optional(),
   }),
   component: RouteComponent,
   pendingComponent: PostsSkeleton,
   loaderDeps: ({ search }) => ({
     tagName: search.tagName,
-    categoryName: search.categoryName,
-    uncategorized: search.uncategorized,
   }),
   loader: async ({ context, deps }) => {
     const [, , , domain, siteConfig] = await Promise.all([
       context.queryClient.prefetchInfiniteQuery(
         postsInfiniteQueryOptions({
           tagName: deps.tagName,
-          categoryName: deps.categoryName,
-          uncategorized: deps.uncategorized,
+          categoryName: POSTS_CATEGORY_NAME,
           limit: POSTS_PER_PAGE,
         }),
       ),
@@ -59,8 +51,6 @@ export const Route = createFileRoute("/_public/posts")({
       description: siteConfig.description,
       canonicalHref: buildCanonicalUrl(domain, "/posts", {
         tagName: deps.tagName,
-        categoryName: deps.categoryName,
-        uncategorized: deps.uncategorized ? "true" : undefined,
       }),
     };
   },
@@ -88,8 +78,7 @@ function RouteComponent() {
     useSuspenseInfiniteQuery(
       postsInfiniteQueryOptions({
         tagName: search.tagName,
-        categoryName: search.categoryName,
-        uncategorized: search.uncategorized,
+        categoryName: POSTS_CATEGORY_NAME,
         limit: POSTS_PER_PAGE,
       }),
     );
