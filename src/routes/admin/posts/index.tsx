@@ -40,6 +40,7 @@ export const Route = createFileRoute("/admin/posts/")({
           status: "ALL",
           sortBy: "updatedAt",
           search: "",
+          categoryId: 1,   // ← 新增
         }),
       ),
     );
@@ -91,6 +92,7 @@ function PostManagerPage() {
       }
       onSearchChange={(newSearch) => updateSearch({ search: newSearch })}
       onResetFilters={handleResetFilters}
+      fixedCategoryId={1}   // ← 新增
     />
   );
 }
