@@ -17,7 +17,6 @@ interface UsePostActionsOptions {
   setPost: React.Dispatch<React.SetStateAction<PostEditorData>>;
   setError: (error: string | null) => void;
   flush: () => Promise<void>;
-  beforePublish?: () => Promise<void>;   // ← 新增
 }
 
 export function usePostActions({
@@ -26,7 +25,6 @@ export function usePostActions({
   setPost,
   setError,
   flush,
-  beforePublish,   // ← 新增
 }: UsePostActionsOptions) {
   const queryClient = useQueryClient();
 
@@ -49,6 +47,8 @@ export function usePostActions({
   const publishedRef = useRef(false);
   latestSlugRef.current = post.slug;
   latestTitleRef.current = post.title;
+  // `publishedAt` arrives on reload after the first publish and survives an
+  // unpublish; `hasPublicSnapshot` covers the session that first publishes.
   publishedRef.current = post.hasPublicSnapshot || post.publishedAt !== null;
   const debouncedTitle = useDebounce(post.title, 500);
 
@@ -101,16 +101,6 @@ export function usePostActions({
   const handlePublish = useCallback(async () => {
     if (processState !== "IDLE") return;
     setProcessState("PROCESSING");
-
-    // 发布前自动填充摘要
-    if (beforePublish) {
-      try {
-        await beforePublish();
-      } catch {
-        // 自动填充失败不影响发布
-      }
-    }
-
     try {
       await flush();
     } catch (error) {
@@ -123,7 +113,7 @@ export function usePostActions({
       return;
     }
     publishMutation.mutate();
-  }, [flush, processState, publishMutation, beforePublish]);
+  }, [flush, processState, publishMutation]);
 
   const handleUnpublish = useCallback(() => {
     if (processState !== "IDLE") return;
