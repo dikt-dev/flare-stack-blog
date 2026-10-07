@@ -54,9 +54,6 @@ export function PostEditor({
   const editorContentRef = useRef(editorContent);
   editorContentRef.current = editorContent;
 
-  // 是否正在发布（动态发布时强制填充摘要）
-  const isPublishingRef = useRef(false);
-
   const getContent = useCallback(() => {
     const editor = editorRef.current;
     if (editor && !editor.isDestroyed) {
@@ -65,39 +62,30 @@ export function PostEditor({
     return editorContentRef.current;
   }, []);
 
-  // 保存时：动态在发布流程中无条件填充摘要
-  const handleSaveWithAutoFill = useCallback(
-    async (data: PostEditorData) => {
-      let nextData = { ...data };
-
-      // 动态（fixedCategoryId === 2）且正在发布 → 无条件从正文填充摘要
-      if (fixedCategoryId === 2 && isPublishingRef.current) {
-        const content = getContent();
-        if (content) {
-          const summary = extractSummary(content);
-          if (summary) {
-            nextData = { ...nextData, summary };
-            setPost((prev) => ({ ...prev, summary }));
-          }
-        }
-      }
-
-      await onSave(nextData);
-    },
-    [getContent, onSave, fixedCategoryId],
-  );
-
   const { saveStatus, lastSaved, setError, flush } = useAutoSave({
     post,
     getContent,
     contentEpoch,
-    onSave: handleSaveWithAutoFill,
+    onSave,
   });
 
   const { proceed, reset, status } = useBlocker({
     shouldBlockFn: () => saveStatus !== "SYNCED",
     withResolver: true,
   });
+
+  // 动态发布前：直接填充摘要，触发保存
+  const handleBeforePublish = useCallback(async () => {
+    if (fixedCategoryId !== 2) return;
+    const content = getContent();
+    if (!content) return;
+    const summary = extractSummary(content);
+    if (summary) {
+      setPost((prev) => ({ ...prev, summary }));
+      // 等 React 状态更新
+      await new Promise((r) => setTimeout(r, 50));
+    }
+  }, [getContent, fixedCategoryId]);
 
   const {
     isGeneratingSlug,
@@ -113,12 +101,7 @@ export function PostEditor({
     setPost,
     setError,
     flush,
-    beforePublish: async () => {
-      isPublishingRef.current = true;
-    },
-    afterPublish: () => {
-      isPublishingRef.current = false;
-    },
+    beforePublish: handleBeforePublish,
   });
 
   const handleEditorCreated = useCallback((editor: TiptapEditor | null) => {
