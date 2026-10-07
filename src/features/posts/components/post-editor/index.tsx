@@ -62,7 +62,7 @@ export function PostEditor({
     return editorContentRef.current;
   }, []);
 
-  const { saveStatus, lastSaved, setError, flush } = useAutoSave({
+  const { saveStatus, lastSaved, setError, flush, markSaved } = useAutoSave({
     post,
     getContent,
     contentEpoch,
@@ -74,7 +74,7 @@ export function PostEditor({
     withResolver: true,
   });
 
-  // 动态发布前：无条件把正文第一段填充到摘要
+  // 动态发布前：无条件填充摘要，并同步 useAutoSave 快照
   const handleBeforePublish = useCallback(async () => {
     if (fixedCategoryId !== 2) return;
     const content = getContent();
@@ -85,10 +85,14 @@ export function PostEditor({
         summary,
         contentJson: content,
       };
+      // 直接保存，绕过 flush
       await onSave(nextData);
+      // 同步 useAutoSave 内部快照，防止 flush 用旧数据覆盖
+      markSaved(nextData);
+      // 同步 UI 状态
       setPost((prev) => ({ ...prev, summary }));
     }
-  }, [getContent, fixedCategoryId, post, onSave]);
+  }, [getContent, fixedCategoryId, post, onSave, markSaved]);
 
   const {
     isGeneratingSlug,
