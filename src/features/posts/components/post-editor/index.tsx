@@ -19,7 +19,11 @@ import { PostEditorInfoPanel } from "./post-editor-info-panel";
 import { PostEditorSummary } from "./post-editor-summary";
 import type { PostEditorData, PostEditorProps } from "./types";
 
-export function PostEditor({ initialData, onSave }: PostEditorProps) {
+export function PostEditor({
+  initialData,
+  onSave,
+  fixedCategoryId,   // ← 新增
+}: PostEditorProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { setPrimaryAction, setMobileTitle } = useAdminChrome();
@@ -176,6 +180,7 @@ export function PostEditor({ initialData, onSave }: PostEditorProps) {
       isGeneratingSlug={isGeneratingSlug}
       onPostChange={handlePostChange}
       onGenerateSlug={handleGenerateSlug}
+      fixedCategoryId={fixedCategoryId}   // ← 新增
     />
   );
 
