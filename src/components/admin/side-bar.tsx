@@ -12,6 +12,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
+  Sparkles,
   Tag,
   User,
   X,
@@ -94,6 +95,12 @@ export function SideBar({
       path: "/admin/posts",
       icon: FileText,
       label: m.admin_sidebar_posts(),
+      exact: false,
+    },
+    {
+      path: "/admin/moments",
+      icon: Sparkles,
+      label: m.admin_sidebar_moments(),
       exact: false,
     },
     {
