@@ -76,26 +76,21 @@ export function PostEditor({
 
   // 动态发布前：无条件填充摘要，并同步 useAutoSave 快照
   const handleBeforePublish = useCallback(async () => {
-    console.log("[beforePublish] fixedCategoryId:", fixedCategoryId);
     if (fixedCategoryId !== 2) return;
     const content = getContent();
-    console.log(
-      "[beforePublish] content:",
-      JSON.stringify(content).slice(0, 300),
-    );
     const summary = content ? extractSummary(content) : null;
-    console.log("[beforePublish] extracted summary:", summary);
     if (summary !== null) {
       const nextData: PostEditorData = {
         ...post,
         summary,
         contentJson: content,
       };
-      console.log("[beforePublish] nextData.summary:", nextData.summary);
+      // 直接保存，绕过 flush
       await onSave(nextData);
+      // 同步 useAutoSave 内部快照，防止 flush 用旧数据覆盖
       markSaved(nextData);
+      // 同步 UI 状态
       setPost((prev) => ({ ...prev, summary }));
-      console.log("[beforePublish] done");
     }
   }, [getContent, fixedCategoryId, post, onSave, markSaved]);
 
