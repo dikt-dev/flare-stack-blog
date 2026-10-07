@@ -14,7 +14,7 @@ interface PostEditorMetadataProps {
   isGeneratingSlug: boolean;
   onPostChange: (updates: Partial<PostEditorData>) => void;
   onGenerateSlug: () => void;
-  fixedCategoryId?: number;   // ← 新增
+  fixedCategoryId?: number;
 }
 
 export function PostEditorMetadata({
@@ -25,6 +25,9 @@ export function PostEditorMetadata({
   fixedCategoryId,
 }: PostEditorMetadataProps) {
   const categoryLocked = fixedCategoryId !== undefined;
+  // 动态（分类 ID 2）不显示摘要字段
+  const isMoment = fixedCategoryId === 2;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 custom-scrollbar">
@@ -130,16 +133,19 @@ export function PostEditorMetadata({
           </button>
         </div>
 
-        <label className="grid gap-2 text-xs fuwari-text-50">
-          {m.editor_meta_summary()}
-          <TextareaAutosize
-            value={post.summary || ""}
-            onChange={(e) => onPostChange({ summary: e.target.value })}
-            placeholder={m.editor_summary_placeholder()}
-            minRows={3}
-            className="w-full resize-none rounded-xl bg-(--fuwari-btn-regular-bg) px-3 py-2.5 text-sm leading-relaxed fuwari-text-90 outline-none placeholder:fuwari-text-30"
-          />
-        </label>
+        {/* 动态不显示摘要字段 */}
+        {!isMoment && (
+          <label className="grid gap-2 text-xs fuwari-text-50">
+            {m.editor_meta_summary()}
+            <TextareaAutosize
+              value={post.summary || ""}
+              onChange={(e) => onPostChange({ summary: e.target.value })}
+              placeholder={m.editor_summary_placeholder()}
+              minRows={3}
+              className="w-full resize-none rounded-xl bg-(--fuwari-btn-regular-bg) px-3 py-2.5 text-sm leading-relaxed fuwari-text-90 outline-none placeholder:fuwari-text-30"
+            />
+          </label>
+        )}
       </div>
     </div>
   );
