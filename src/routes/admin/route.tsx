@@ -127,8 +127,8 @@ function AdminMain() {
           includeSearch={false}
           pathKey={(path) => {
             if (settingsSectionFromPath(path)) return "/admin/settings/*";
-            const edit = path.match(/\/admin\/posts\/edit\/([^/]+)/);
-            if (edit) return `/admin/posts/edit/${edit[1]}`;
+            const edit = path.match(/\/admin\/(posts|moments)\/edit\/([^/]+)/);
+            if (edit) return `/admin/${edit[1]}/edit/${edit[2]}`;
             return path;
           }}
           onEntered={() => {
