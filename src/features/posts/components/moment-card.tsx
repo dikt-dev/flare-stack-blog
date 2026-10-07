@@ -11,7 +11,6 @@ import { m } from "@/paraglide/messages";
 
 interface MomentCardProps {
   post: PostItem;
-  /** 是否为最后一项（最后一项不显示底部虚线） */
   isLast?: boolean;
 }
 
@@ -22,7 +21,7 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
   return (
     <div className="w-full">
       <div className="fuwari-card-base flex flex-col w-full rounded-(--fuwari-radius-large) overflow-hidden">
-        {/* 封面：周围留间距，顶部对齐，object-top 保证顶部完整 */}
+        {/* 封面：有封面时显示 */}
         {hasCover && post.cover ? (
           <div className="p-4 pb-0">
             <Link
@@ -41,15 +40,27 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
           </div>
         ) : null}
 
-        {/* 内容区 */}
-        <div className="flex flex-col gap-2.5 p-5">
+        {/* 内容区：没封面时加大间距，让文字占更多面积 */}
+        <div
+          className={
+            hasCover
+              ? "flex flex-col gap-2.5 p-5"
+              : "flex flex-col gap-3 p-6 py-8"
+          }
+        >
           {/* 标题 */}
           <Link
             to="/post/$slug"
             params={{ slug: post.slug }}
             className="group flex items-start gap-2"
           >
-            <span className="text-lg font-bold fuwari-text-90 leading-snug group-hover:text-(--fuwari-primary) transition">
+            <span
+              className={
+                hasCover
+                  ? "text-lg font-bold fuwari-text-90 leading-snug group-hover:text-(--fuwari-primary) transition"
+                  : "text-xl font-bold fuwari-text-90 leading-snug group-hover:text-(--fuwari-primary) transition"
+              }
+            >
               {post.title}
             </span>
             <ChevronRight
@@ -94,7 +105,13 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
           </div>
 
           {/* 摘要 */}
-          <p className="fuwari-text-75 text-sm leading-relaxed line-clamp-3">
+          <p
+            className={
+              hasCover
+                ? "fuwari-text-75 text-sm leading-relaxed line-clamp-3"
+                : "fuwari-text-75 text-sm leading-relaxed line-clamp-6"
+            }
+          >
             {post.summary ?? m.post_card_no_summary()}
           </p>
 
