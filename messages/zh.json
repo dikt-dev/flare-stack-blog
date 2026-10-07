@@ -26,6 +26,7 @@
   "admin_moments_create": "新建动态",
   "admin_moments_creating": "正在创建…",
   "admin_moments_total": "{count} 条动态",
+  "post_card_no_summary": "暂无摘要",
   "footer_copyright": "© {year} {author}. All Rights Reserved.",
   "footer_powered_by": "Powered by",
   "posts_title": "全部文章",
