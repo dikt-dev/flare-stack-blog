@@ -19,19 +19,19 @@ export function MomentCard({ post }: MomentCardProps) {
 
   return (
     <div className="fuwari-card-base flex flex-col w-full rounded-(--fuwari-radius-large) overflow-hidden">
-      {/* 封面：固定高度，object-contain 等比缩放，图片完整显示 */}
+      {/* 封面：铺满卡片宽度，object-cover 裁切成 16:9 */}
       {hasCover && post.cover ? (
         <Link
           to="/post/$slug"
           params={{ slug: post.slug }}
           aria-label={post.title}
-          className="group relative block w-full h-48 overflow-hidden bg-(--fuwari-btn-regular-bg)"
+          className="group relative block w-full aspect-video overflow-hidden"
         >
           <div className="absolute inset-0 z-10 group-hover:bg-black/20 transition pointer-events-none" />
           <img
             src={getPublicImageSrc(post.cover.url, PUBLIC_IMAGE_WIDTH.cover)}
             alt={post.title}
-            className="absolute inset-0 w-full h-full object-contain"
+            className="absolute inset-0 w-full h-full object-cover"
           />
         </Link>
       ) : null}
