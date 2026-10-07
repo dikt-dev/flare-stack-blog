@@ -17,6 +17,13 @@ import { PostManagerSkeleton } from "./post-manager-skeleton";
 import type { AdminPostListItem, SortField, StatusFilter } from "./types";
 import "./post-manager.css";
 
+interface PostManagerLabels {
+  title: string;
+  create: string;
+  creating: string;
+  total: (count: number) => string;
+}
+
 interface PostManagerProps {
   page: number;
   status: StatusFilter;
@@ -28,6 +35,7 @@ interface PostManagerProps {
   onSearchChange: (search: string) => void;
   onResetFilters: () => void;
   fixedCategoryId?: number;
+  labels?: PostManagerLabels;   // ← 新增
 }
 
 export function PostManager({
@@ -41,6 +49,7 @@ export function PostManager({
   onSearchChange,
   onResetFilters,
   fixedCategoryId,
+  labels,
 }: PostManagerProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -116,7 +125,13 @@ export function PostManager({
       onPageChange(Math.max(1, totalPages));
   }, [page, totalPages, isPending, isPlaceholderData, error, onPageChange]);
 
-  const editBasePath = fixedCategoryId === 2 ? "/admin/moments" : "/admin/posts";   // ← 新增
+  const editBasePath = fixedCategoryId === 2 ? "/admin/moments" : "/admin/posts";
+
+  // 文案：优先用传入的 labels，否则用默认的"文章"文案
+  const title = labels?.title ?? m.admin_posts_title();
+  const createLabel = labels?.create ?? m.admin_posts_create();
+  const creatingLabel = labels?.creating ?? m.admin_posts_creating();
+  const totalLabel = labels?.total ?? m.admin_posts_total;
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -143,17 +158,15 @@ export function PostManager({
   });
   const createPost = createMutation.mutate;
   const isCreating = createMutation.isPending;
-  const createLabel = isCreating
-    ? m.admin_posts_creating()
-    : m.admin_posts_create();
+  const label = isCreating ? creatingLabel : createLabel;
   useEffect(() => {
     setPrimaryAction({
-      label: createLabel,
+      label,
       onClick: () => createPost(),
       disabled: isCreating,
     });
     return () => setPrimaryAction(null);
-  }, [createLabel, createPost, isCreating, setPrimaryAction]);
+  }, [label, createPost, isCreating, setPrimaryAction]);
   const deleteMutation = useDeletePost({
     onSuccess: () => setPostToDelete(null),
   });
@@ -166,10 +179,10 @@ export function PostManager({
     <section className="post-manager fuwari-card-base">
       <header className="post-list-heading">
         <div>
-          <h1>{m.admin_posts_title()}</h1>
+          <h1>{title}</h1>
           <p>
             {statusCounts
-              ? m.admin_posts_total({
+              ? totalLabel({
                   count: statusCounts.draft + statusCounts.published,
                 })
               : "—"}
@@ -189,7 +202,7 @@ export function PostManager({
           disabled={isCreating}
         >
           <Plus size={19} />
-          {createLabel}
+          {label}
         </button>
       </header>
       <PostsToolbar
@@ -207,7 +220,7 @@ export function PostManager({
         className="post-list-scroll custom-scrollbar"
         data-scroll-restoration-id="admin-post-list"
         role="region"
-        aria-label={m.admin_posts_title()}
+        aria-label={title}
         tabIndex={0}
       >
         {error ? (
@@ -252,7 +265,7 @@ export function PostManager({
                           deleteTriggerRef.current = trigger;
                           setPostToDelete(target);
                         }}
-                        editBasePath={editBasePath}   // ← 新增
+                        editBasePath={editBasePath}
                       />
                     ))
                   )}
@@ -274,7 +287,7 @@ export function PostManager({
                     isEmptyLibrary ? createPost() : resetFilters()
                   }
                 >
-                  {isEmptyLibrary ? createLabel : m.admin_posts_clear_filters()}
+                  {isEmptyLibrary ? label : m.admin_posts_clear_filters()}
                 </button>
               </div>
             )}
@@ -287,7 +300,7 @@ export function PostManager({
             <p>
               {hasContentFilter
                 ? m.admin_posts_results({ count: totalCount })
-                : m.admin_posts_total({ count: totalCount })}
+                : totalLabel({ count: totalCount })}
             </p>
           ) : (
             <AdminPagination
