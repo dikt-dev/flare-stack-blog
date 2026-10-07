@@ -106,7 +106,6 @@ export function usePostActions({
     if (processState !== "IDLE") return;
     setProcessState("PROCESSING");
 
-    // 标记发布中，让保存逻辑知道现在要自动填充
     if (beforePublish) {
       await beforePublish();
     }
