@@ -62,30 +62,41 @@ export function PostEditor({
     return editorContentRef.current;
   }, []);
 
+  // 保存时自动填充摘要（只在已发布状态下生效）
+  const handleSaveWithAutoFill = useCallback(
+    async (data: PostEditorData) => {
+      const content = getContent();
+      let nextData = { ...data };
+
+      // 只对已发布的内容自动填充（首次发布后、再次编辑时生效）
+      const shouldAutoFill =
+        data.hasPublicSnapshot || data.publishedAt !== null;
+
+      if (shouldAutoFill && !nextData.summary?.trim() && content) {
+        const summary = extractSummary(content);
+        if (summary) {
+          nextData = { ...nextData, summary };
+          // 同步更新 UI
+          setPost((prev) => ({ ...prev, summary }));
+        }
+      }
+
+      await onSave(nextData);
+    },
+    [getContent, onSave],
+  );
+
   const { saveStatus, lastSaved, setError, flush } = useAutoSave({
     post,
     getContent,
     contentEpoch,
-    onSave,
+    onSave: handleSaveWithAutoFill,
   });
 
   const { proceed, reset, status } = useBlocker({
     shouldBlockFn: () => saveStatus !== "SYNCED",
     withResolver: true,
   });
-
-  // 发布前自动填充摘要（如果为空）
-  const handleBeforePublish = useCallback(async () => {
-    const content = getContent();
-    if (content && !post.summary?.trim()) {
-      const summary = extractSummary(content);
-      if (summary) {
-        setPost((prev) => ({ ...prev, summary }));
-        // 等 React 状态更新 + 自动保存
-        await new Promise((r) => setTimeout(r, 0));
-      }
-    }
-  }, [getContent, post.summary]);
 
   const {
     isGeneratingSlug,
@@ -101,7 +112,6 @@ export function PostEditor({
     setPost,
     setError,
     flush,
-    beforePublish: handleBeforePublish,   // ← 新增
   });
 
   const handleEditorCreated = useCallback((editor: TiptapEditor | null) => {
