@@ -27,6 +27,7 @@ interface PostManagerProps {
   onSortByChange: (sortBy: SortField) => void;
   onSearchChange: (search: string) => void;
   onResetFilters: () => void;
+  fixedCategoryId?: number;   // ← 新增
 }
 
 export function PostManager({
@@ -39,6 +40,7 @@ export function PostManager({
   onSortByChange,
   onSearchChange,
   onResetFilters,
+  fixedCategoryId,   // ← 新增
 }: PostManagerProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -85,7 +87,13 @@ export function PostManager({
     isPlaceholderData,
     error,
     refetch,
-  } = usePosts({ page, status, sortBy, search });
+  } = usePosts({
+    page,
+    status,
+    sortBy,
+    search,
+    categoryId: fixedCategoryId,   // ← 新增
+  });
   const contentRef = useRef<HTMLTableSectionElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   useListScroll(
@@ -109,13 +117,25 @@ export function PostManager({
   }, [page, totalPages, isPending, isPlaceholderData, error, onPageChange]);
 
   const createMutation = useMutation({
-    mutationFn: () => orpcClient.posts.admin.create(),
+    mutationFn: async () => {
+      const post = await orpcClient.posts.admin.create();
+      // 创建后立即设置分类
+      if (fixedCategoryId) {
+        await orpcClient.posts.admin.update({
+          id: post.id,
+          data: { categoryId: fixedCategoryId },
+        });
+      }
+      return post;
+    },
     onSuccess: (post) => {
       void queryClient.invalidateQueries({
         queryKey: orpc.posts.admin.list.key(),
       });
+      // 根据当前分类决定跳转路径
+      const basePath = fixedCategoryId === 2 ? "/admin/moments" : "/admin/posts";
       void navigate({
-        to: "/admin/posts/edit/$id",
+        to: `${basePath}/edit/$id`,
         params: { id: String(post.id) },
       });
     },
