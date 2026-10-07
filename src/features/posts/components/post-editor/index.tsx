@@ -54,7 +54,7 @@ export function PostEditor({
   const editorContentRef = useRef(editorContent);
   editorContentRef.current = editorContent;
 
-  // 标记是否正在发布（发布时触发自动填充）
+  // 是否正在发布（动态发布时强制填充摘要）
   const isPublishingRef = useRef(false);
 
   const getContent = useCallback(() => {
@@ -65,22 +65,15 @@ export function PostEditor({
     return editorContentRef.current;
   }, []);
 
-  // 保存时：只在「发布流程中」自动填充
+  // 保存时：动态在发布流程中无条件填充摘要
   const handleSaveWithAutoFill = useCallback(
     async (data: PostEditorData) => {
-      const content = getContent();
       let nextData = { ...data };
 
-      // 只在发布时触发自动填充
-      if (isPublishingRef.current && content) {
-        const currentSummary = nextData.summary?.trim() ?? "";
-        const wasPublished = data.hasPublicSnapshot || data.publishedAt !== null;
-
-        // 首次发布：摘要为空 → 自动填充
-        // 再次发布：摘要为空，或正文变了 → 重新提取
-        const shouldFill = !currentSummary || wasPublished;
-
-        if (shouldFill) {
+      // 动态（fixedCategoryId === 2）且正在发布 → 无条件从正文填充摘要
+      if (fixedCategoryId === 2 && isPublishingRef.current) {
+        const content = getContent();
+        if (content) {
           const summary = extractSummary(content);
           if (summary) {
             nextData = { ...nextData, summary };
@@ -91,7 +84,7 @@ export function PostEditor({
 
       await onSave(nextData);
     },
-    [getContent, onSave],
+    [getContent, onSave, fixedCategoryId],
   );
 
   const { saveStatus, lastSaved, setError, flush } = useAutoSave({
