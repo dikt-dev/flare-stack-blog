@@ -11,6 +11,10 @@ import { CodeBlockHighlightProvider } from "@/features/posts/editor/extensions/c
 import { postContentOf } from "@/features/posts/editor/extensions/image-placeholder";
 import { postRevisionListQuery } from "@/features/posts/queries";
 import { normalizePostContent } from "@/features/posts/utils/normalize-content";
+import {
+  extractFirstImageSrc,
+  extractSummary,
+} from "@/features/posts/utils/extract-from-content";
 import { m } from "@/paraglide/messages";
 import { useAutoSave, usePostActions } from "./hooks";
 import { PostEditorHeader } from "./post-editor-header";
@@ -22,7 +26,7 @@ import type { PostEditorData, PostEditorProps } from "./types";
 export function PostEditor({
   initialData,
   onSave,
-  fixedCategoryId,   // ← 新增
+  fixedCategoryId,
 }: PostEditorProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -56,17 +60,47 @@ export function PostEditor({
   const getContent = useCallback(() => {
     const editor = editorRef.current;
     if (editor && !editor.isDestroyed) {
-      // Autosave and publish both save this.
       return postContentOf(editor.state.doc);
     }
     return editorContentRef.current;
   }, []);
 
+  // 保存时自动填充摘要和封面
+  const handleSaveWithAutoFill = useCallback(
+    async (data: PostEditorData) => {
+      const content = getContent();
+      let nextData = { ...data };
+
+      // 摘要为空 → 自动从正文提取
+      if (!nextData.summary?.trim() && content) {
+        const summary = extractSummary(content);
+        if (summary) {
+          nextData = { ...nextData, summary };
+          // 同步更新 UI
+          setPost((prev) => ({ ...prev, summary }));
+        }
+      }
+
+      // 封面为空 → 自动从正文第一张图提取
+      if (!nextData.coverMediaId && content) {
+        const src = extractFirstImageSrc(content);
+        if (src) {
+          // TODO: 从 src 反查媒体 ID，补全 coverMediaId 和 cover
+          // 暂时只记录日志，等确认 API 后再实现
+          console.warn("自动填充封面暂未实现，图片 src:", src);
+        }
+      }
+
+      await onSave(nextData);
+    },
+    [getContent, onSave],
+  );
+
   const { saveStatus, lastSaved, setError, flush } = useAutoSave({
     post,
     getContent,
     contentEpoch,
-    onSave,
+    onSave: handleSaveWithAutoFill,
   });
 
   const { proceed, reset, status } = useBlocker({
@@ -180,7 +214,7 @@ export function PostEditor({
       isGeneratingSlug={isGeneratingSlug}
       onPostChange={handlePostChange}
       onGenerateSlug={handleGenerateSlug}
-      fixedCategoryId={fixedCategoryId}   // ← 新增
+      fixedCategoryId={fixedCategoryId}
     />
   );
 
