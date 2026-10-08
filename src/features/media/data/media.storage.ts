@@ -9,7 +9,7 @@ export async function putToR2(
   key = generateKey(image.name),
 ) {
   const contentType = image.type;
-  let body: ReadableStream | File;
+  let body: Blob | File;
   let finalContentType = contentType;
   let finalSize = image.size;
   let finalKey = key;
@@ -22,9 +22,10 @@ export async function putToR2(
         .output({ format: "image/webp", quality: 82 })
     ).response();
 
-    body = response.body!;
+    const arrayBuffer = await response.arrayBuffer();
+    finalSize = arrayBuffer.byteLength;
+    body = new Blob([arrayBuffer], { type: "image/webp" });
     finalContentType = "image/webp";
-    finalSize = parseInt(response.headers.get("content-length") || "0", 10);
     finalKey = key.replace(/\.[^.]+$/, ".webp");
   }
 
@@ -42,11 +43,11 @@ export async function putToR2(
   });
 
   return {
-    key: finalKey, // 返回纯文件名
-    url: `https://img.ryn.us.ci/images/${finalKey}`, // 完整访问地址
+    key: finalKey,
+    url: `https://img.ryn.us.ci/images/${finalKey}`,
     fileName: image.name,
     mimeType: finalContentType,
-    sizeInBytes: finalSize || image.size,
+    sizeInBytes: finalSize,
   };
 }
 
