@@ -48,7 +48,7 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
               className="absolute top-3 left-5 text-5xl leading-none select-none pointer-events-none"
               style={{ color: "var(--fuwari-primary)", opacity: 0.5 }}
             >
-              &ldquo;
+              “
             </span>
           )}
 
