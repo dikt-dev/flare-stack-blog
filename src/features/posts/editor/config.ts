@@ -12,7 +12,7 @@ import { LinkEditing } from "@/features/posts/editor/extensions/link-editing";
 import { SlashMenu } from "@/features/posts/editor/extensions/slash-menu";
 import type { ImageUploadResult } from "@/features/posts/editor/extensions/upload-image";
 import { ImageUpload } from "@/features/posts/editor/extensions/upload-image";
-import { orpcClient } from "@/lib/orpc";
+import { uploadImage } from "@/features/media/utils/upload-image";
 import { m } from "@/paraglide/messages";
 
 const ALLOWED_IMAGE_MIME_TYPES = [
@@ -24,7 +24,7 @@ const ALLOWED_IMAGE_MIME_TYPES = [
 ];
 
 async function handleImageUpload(file: File): Promise<ImageUploadResult> {
-  const result = await orpcClient.media.upload({ image: file });
+  const result = await uploadImage(file);
   toast.success(m.media_upload_success());
 
   return {
