@@ -36,23 +36,28 @@ export function Categories() {
       collapsed={collapsed}
       onExpand={() => setExpanded(true)}
     >
-      {categories.map((category) => (
-        <Link
-          key={category.id}
-          to="/posts"
-          search={withCategoryFilter(category.name)}
-          className="flex items-center w-full h-10 rounded-lg pl-2 hover:pl-3 hover:bg-(--fuwari-btn-plain-bg-hover) active:bg-(--fuwari-btn-plain-bg-active) transition-all text-neutral-700 hover:text-(--fuwari-primary) dark:text-neutral-300 dark:hover:text-(--fuwari-primary)"
-        >
-          <div className="flex items-center justify-between relative mr-2 w-full min-w-0">
-            <div className="overflow-hidden text-left whitespace-nowrap text-ellipsis">
-              {category.name}
+      {categories.map((category) => {
+        // 动态分类跳转到 /moments，其他分类跳转到 /posts
+        const targetPath =
+          category.name === "动态" ? "/moments" : "/posts";
+        return (
+          <Link
+            key={category.id}
+            to={targetPath}
+            search={withCategoryFilter(category.name)}
+            className="flex items-center w-full h-10 rounded-lg pl-2 hover:pl-3 hover:bg-(--fuwari-btn-plain-bg-hover) active:bg-(--fuwari-btn-plain-bg-active) transition-all text-neutral-700 hover:text-(--fuwari-primary) dark:text-neutral-300 dark:hover:text-(--fuwari-primary)"
+          >
+            <div className="flex items-center justify-between relative mr-2 w-full min-w-0">
+              <div className="overflow-hidden text-left whitespace-nowrap text-ellipsis">
+                {category.name}
+              </div>
+              <div className="transition px-2 h-7 ml-4 min-w-8 rounded-lg text-sm font-bold text-(--fuwari-btn-content) dark:text-(--fuwari-deep-text) bg-(--fuwari-btn-regular-bg) dark:bg-(--fuwari-primary) flex items-center justify-center">
+                {category.postCount}
+              </div>
             </div>
-            <div className="transition px-2 h-7 ml-4 min-w-8 rounded-lg text-sm font-bold text-(--fuwari-btn-content) dark:text-(--fuwari-deep-text) bg-(--fuwari-btn-regular-bg) dark:bg-(--fuwari-primary) flex items-center justify-center">
-              {category.postCount}
-            </div>
-          </div>
-        </Link>
-      ))}
+          </Link>
+        );
+      })}
     </ExpandableSidebarCard>
   );
 }
