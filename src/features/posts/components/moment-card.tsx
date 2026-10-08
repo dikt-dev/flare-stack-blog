@@ -40,7 +40,17 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
           </div>
         ) : null}
 
-        <div className="flex flex-col gap-4 px-7 py-8">
+        <div className="flex flex-col gap-4 px-7 py-8 relative">
+          {/* 无封面时的引号装饰 */}
+          {!hasCover && (
+            <span
+              aria-hidden="true"
+              className="absolute top-4 left-4 text-4xl leading-none fuwari-text-30 select-none pointer-events-none"
+            >
+              &ldquo;
+            </span>
+          )}
+
           {hasTitle && (
             <Link
               to="/post/$slug"
