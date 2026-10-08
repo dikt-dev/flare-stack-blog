@@ -8,6 +8,7 @@ import { tagsQueryOptions } from "@/features/tags/queries";
 import { m } from "@/paraglide/messages";
 
 const COLLAPSE_THRESHOLD = 20;
+const HIDDEN_TAGS = new Set(["动态"]);
 
 export function TagsSkeleton() {
   return (
@@ -26,9 +27,12 @@ export function Tags() {
   const { data: tags } = useSuspenseQuery(tagsQueryOptions);
   const [expanded, setExpanded] = useState(false);
 
-  if (tags.length === 0) return null;
+  // 过滤掉“动态”标签
+  const visibleTags = tags.filter((tag) => !HIDDEN_TAGS.has(tag.name));
 
-  const collapsed = tags.length >= COLLAPSE_THRESHOLD && !expanded;
+  if (visibleTags.length === 0) return null;
+
+  const collapsed = visibleTags.length >= COLLAPSE_THRESHOLD && !expanded;
 
   return (
     <ExpandableSidebarCard
@@ -37,7 +41,7 @@ export function Tags() {
       onExpand={() => setExpanded(true)}
       contentClassName="flex flex-wrap gap-2"
     >
-      {tags.map((tag) => (
+      {visibleTags.map((tag) => (
         <Link
           key={tag.id}
           to="/posts"
