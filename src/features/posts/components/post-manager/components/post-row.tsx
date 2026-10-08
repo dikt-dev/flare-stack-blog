@@ -34,7 +34,8 @@ export function PostRow({
   editBasePath = "/admin/posts",
 }: PostRowProps) {
   const rawTitle = post.title.trim();
-  const title = rawTitle || post.summary?.trim() || m.common_untitled();
+  const rawSummary = post.summary?.trim() || "";
+  const title = rawTitle || rawSummary || m.common_untitled();
   const date = post[sortBy];
 
   return (
@@ -53,7 +54,8 @@ export function PostRow({
             className="post-list-title-link"
           >
             <strong>{title}</strong>
-            <span>{post.slug || m.admin_posts_slug_empty()}</span>
+            {/* 有标题时，下面显示摘要 */}
+            {rawTitle && rawSummary ? <span>{rawSummary}</span> : null}
           </Link>
         </div>
       </td>
