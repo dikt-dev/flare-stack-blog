@@ -11,7 +11,10 @@ import { CodeBlockHighlightProvider } from "@/features/posts/editor/extensions/c
 import { postContentOf } from "@/features/posts/editor/extensions/image-placeholder";
 import { postRevisionListQuery } from "@/features/posts/queries";
 import { normalizePostContent } from "@/features/posts/utils/normalize-content";
-import { extractSummary } from "@/features/posts/utils/extract-from-content";
+import {
+  extractFirstImage,
+  extractSummary,
+} from "@/features/posts/utils/extract-from-content";
 import { m } from "@/paraglide/messages";
 import { useAutoSave, usePostActions } from "./hooks";
 import { PostEditorHeader } from "./post-editor-header";
@@ -74,24 +77,39 @@ export function PostEditor({
     withResolver: true,
   });
 
-  // 动态发布前：无条件填充摘要，并同步 useAutoSave 快照
+  // 动态发布前：无条件填充摘要，封面为空时用正文第一张图
   const handleBeforePublish = useCallback(async () => {
     if (fixedCategoryId !== 2) return;
     const content = getContent();
     const summary = content ? extractSummary(content) : null;
+    const firstImage = content ? extractFirstImage(content) : null;
+
+    const nextData: PostEditorData = {
+      ...post,
+      contentJson: content,
+    };
+
+    // 无条件填充摘要
     if (summary !== null) {
-      const nextData: PostEditorData = {
-        ...post,
-        summary,
-        contentJson: content,
-      };
-      // 直接保存，绕过 flush
-      await onSave(nextData);
-      // 同步 useAutoSave 内部快照，防止 flush 用旧数据覆盖
-      markSaved(nextData);
-      // 同步 UI 状态
-      setPost((prev) => ({ ...prev, summary }));
+      nextData.summary = summary;
     }
+
+    // 封面为空 → 用正文第一张图（需要 mediaId 才能设置封面）
+    if (!post.coverMediaId && firstImage && firstImage.mediaId !== null) {
+      nextData.coverMediaId = firstImage.mediaId;
+      nextData.cover = {
+        id: firstImage.mediaId,
+        key: firstImage.fileName,
+        url: firstImage.src,
+        fileName: firstImage.fileName,
+        width: firstImage.width,
+        height: firstImage.height,
+      };
+    }
+
+    await onSave(nextData);
+    markSaved(nextData);
+    setPost((prev) => ({ ...prev, ...nextData }));
   }, [getContent, fixedCategoryId, post, onSave, markSaved]);
 
   const {
