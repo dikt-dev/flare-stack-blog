@@ -53,9 +53,15 @@ export function PostRow({
             state={editorState}
             className="post-list-title-link"
           >
-            <strong>{title}</strong>
-            {/* 有标题时，下面显示摘要 */}
-            {rawTitle && rawSummary ? <span>{rawSummary}</span> : null}
+            <span className="post-list-thumbnail">
+              {post.cover ? (
+                <img src={post.cover.url} alt="" loading="lazy" />
+              ) : null}
+            </span>
+            <span className="post-list-title-text">
+              <strong>{title}</strong>
+              {rawTitle && rawSummary ? <span>{rawSummary}</span> : null}
+            </span>
           </Link>
         </div>
       </td>
