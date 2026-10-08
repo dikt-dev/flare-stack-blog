@@ -54,10 +54,25 @@ type RegisteredEntry = {
 
 const registry: RegisteredEntry[] = [];
 
+// ─── 版本号内存缓存 ──────────────────────────────────────────────
+// 把 `ver:${namespace}` 缓存在 Worker 实例内存里，避免每个请求都读 KV。
+// TTL 60 秒，避免版本号更新后长时间读到旧值。
+const GENERATION_TTL_MS = 60_000;
+const generationCache = new Map<
+  string,
+  { value: string; expiresAt: number }
+>();
+
 async function readGeneration(
   context: InvalidateContext,
   namespace: string,
 ): Promise<string | null> {
+  // 1. 先查内存
+  const cached = generationCache.get(namespace);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.value;
+  }
+
   const key = `ver:${namespace}`;
   let generation: string | null;
   try {
@@ -73,8 +88,10 @@ async function readGeneration(
     return null;
   }
 
-  if (generation === null) return "v0";
-  if (generation.length === 0) {
+  let value: string;
+  if (generation === null) {
+    value = "v0";
+  } else if (generation.length === 0) {
     console.error(
       JSON.stringify({
         message: "public cache generation invalid",
@@ -83,9 +100,16 @@ async function readGeneration(
       }),
     );
     return null;
+  } else {
+    value = `v${generation}`;
   }
 
-  return `v${generation}`;
+  // 2. 写入内存
+  generationCache.set(namespace, {
+    value,
+    expiresAt: Date.now() + GENERATION_TTL_MS,
+  });
+  return value;
 }
 
 async function bumpGeneration(
@@ -107,7 +131,14 @@ async function bumpGeneration(
     );
     throw err;
   }
+
+  // 3. 立即更新内存缓存，避免后续请求读到旧版本号
+  generationCache.set(namespace, {
+    value: `v${generation}`,
+    expiresAt: Date.now() + GENERATION_TTL_MS,
+  });
 }
+// ─────────────────────────────────────────────────────────────
 
 function logicalKey(
   entry: RegisteredEntry,
