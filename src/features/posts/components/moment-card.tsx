@@ -45,7 +45,8 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
           {!hasCover && (
             <span
               aria-hidden="true"
-              className="absolute top-4 left-4 text-4xl leading-none fuwari-text-30 select-none pointer-events-none"
+              className="absolute top-3 left-5 text-6xl font-serif leading-none fuwari-text-30 select-none pointer-events-none"
+              style={{ fontFamily: "Georgia, 'Songti SC', serif" }}
             >
               &ldquo;
             </span>
