@@ -2,21 +2,23 @@ import { getLocale } from "@/paraglide/runtime";
 
 // Publication dates already use UTC days for validation and archive grouping.
 // Explicit locale + timezone make the SSR text identical to the first client render.
+const TIMEZONE = "Asia/Shanghai"; // ← 改成北京时间
+
 const formats = {
   zh: {
     full: new Intl.DateTimeFormat("zh-CN", {
-      timeZone: "UTC",
+      timeZone: TIMEZONE,
       year: "numeric",
       month: "long",
       day: "numeric",
     }),
     short: new Intl.DateTimeFormat("zh-CN", {
-      timeZone: "UTC",
+      timeZone: TIMEZONE,
       month: "2-digit",
       day: "2-digit",
     }),
     fullWithTime: new Intl.DateTimeFormat("zh-CN", {
-      timeZone: "UTC",
+      timeZone: TIMEZONE,
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -27,18 +29,18 @@ const formats = {
   },
   en: {
     full: new Intl.DateTimeFormat("en-US", {
-      timeZone: "UTC",
+      timeZone: TIMEZONE,
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
     }),
     short: new Intl.DateTimeFormat("en-US", {
-      timeZone: "UTC",
+      timeZone: TIMEZONE,
       month: "2-digit",
       day: "2-digit",
     }),
     fullWithTime: new Intl.DateTimeFormat("en-US", {
-      timeZone: "UTC",
+      timeZone: TIMEZONE,
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
