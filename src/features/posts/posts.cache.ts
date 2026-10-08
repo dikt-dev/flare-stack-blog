@@ -75,7 +75,6 @@ export const postsList = defineEntry({
   namespace: "posts:list",
   address: ["limit", "cursor"],
   key: ({
-    limit,
     cursor,
     tagName,
     categoryName,
@@ -90,7 +89,6 @@ export const postsList = defineEntry({
   }) => [
     "posts",
     "list",
-    limit,
     cursor,
     tagName ?? "all-tags",
     uncategorized ? "uncategorized" : (categoryName ?? "all-categories"),
