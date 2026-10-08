@@ -128,6 +128,7 @@ export async function getPosts(
         : PostsTable.publishedAt,
       pinnedAt: publicScope ? snapshotDate("pinnedAt") : PostsTable.pinnedAt,
       categoryId: PostsTable.categoryId,
+      coverMediaId: PostsTable.coverMediaId,
       createdAt: PostsTable.createdAt,
       updatedAt: PostsTable.updatedAt,
       ...(includeContent && !publicScope
@@ -141,6 +142,7 @@ export async function getPosts(
     .where(whereClause);
   return posts;
 }
+
 
 export async function getPostsCount(
   db: DB,
