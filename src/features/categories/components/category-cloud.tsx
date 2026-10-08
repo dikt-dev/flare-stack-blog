@@ -37,14 +37,14 @@ export function Categories() {
       onExpand={() => setExpanded(true)}
     >
       {categories.map((category) => {
-        // 动态分类跳转到 /moments，其他分类跳转到 /posts
-        const targetPath =
-          category.name === "动态" ? "/moments" : "/posts";
+        const isMoment = category.name === "动态";
+        const targetPath = isMoment ? "/moments" : "/posts";
+        const search = isMoment ? {} : withCategoryFilter(category.name);
         return (
           <Link
             key={category.id}
             to={targetPath}
-            search={withCategoryFilter(category.name)}
+            search={search}
             className="flex items-center w-full h-10 rounded-lg pl-2 hover:pl-3 hover:bg-(--fuwari-btn-plain-bg-hover) active:bg-(--fuwari-btn-plain-bg-active) transition-all text-neutral-700 hover:text-(--fuwari-primary) dark:text-neutral-300 dark:hover:text-(--fuwari-primary)"
           >
             <div className="flex items-center justify-between relative mr-2 w-full min-w-0">
