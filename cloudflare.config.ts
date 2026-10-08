@@ -57,6 +57,7 @@ export default defineConfig((ctx) => {
         DOMAIN: { type: "text", value: "ryn.us.ci" },
         BETTER_AUTH_URL: { type: "text", value: "https://ryn.us.ci" },
         GITHUB_CLIENT_ID: { type: "text", value: env.GITHUB_CLIENT_ID },
+        ENVIRONMENT: { type: "text", value: "prod" },
       },
       exports: {
         default: exports.worker({ cache: { enabled: false } }),
