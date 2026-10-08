@@ -22,15 +22,14 @@ export function ArchivePost({ post }: ArchivePostProps) {
       aria-label={post.title}
     >
       <div className="flex flex-row justify-start items-stretch h-full py-2">
-        {/* 日期 */}
         <div className="w-[15%] md:w-[10%] shrink-0 text-sm text-right fuwari-text-50 pr-2 flex items-center justify-end">
           <time dateTime={date?.toISOString()}>
-            {formatPublicPostDate(date, { monthDay: true })}
+            {formatPublicPostDate(date, { withTime: true })}
           </time>
         </div>
 
-        {/* 时间线节点（只保留节点，竖线由父容器画） */}
         <div className="w-[15%] md:w-[10%] shrink-0 relative flex items-center">
+          <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-black/10 dark:bg-white/10" />
           <div
             className="relative z-10 transition-all mx-auto w-1 h-1 rounded group-hover:h-5
               bg-black/50 dark:bg-white/50 group-hover:bg-(--fuwari-primary)
@@ -41,7 +40,6 @@ export function ArchivePost({ post }: ArchivePostProps) {
           />
         </div>
 
-        {/* 封面缩略图 */}
         <div className="w-16 h-12 md:w-20 md:h-14 shrink-0 rounded-lg overflow-hidden ml-2 mr-3 self-center">
           {post.cover ? (
             <img
@@ -57,7 +55,6 @@ export function ArchivePost({ post }: ArchivePostProps) {
           )}
         </div>
 
-        {/* 标题 + 摘要 */}
         <div className="flex-1 min-w-0 pr-4 self-center">
           <div className="text-left font-bold fuwari-text-75 group-hover:text-(--fuwari-primary) transition-colors line-clamp-1">
             {post.title}
@@ -67,7 +64,6 @@ export function ArchivePost({ post }: ArchivePostProps) {
           </div>
         </div>
 
-        {/* 标签（大屏） */}
         <div className="hidden md:flex md:w-[15%] shrink-0 items-center text-left text-sm whitespace-nowrap overflow-hidden text-ellipsis fuwari-text-30">
           {post.tags?.map((t) => `#${t.name}`).join(" ")}
         </div>
