@@ -55,19 +55,21 @@ type RegisteredEntry = {
 const registry: RegisteredEntry[] = [];
 
 // ─── 版本号内存缓存 ──────────────────────────────────────────────
-// 把 `ver:${namespace}` 缓存在 Worker 实例内存里，避免每个请求都读 KV。
-// TTL 60 秒，避免版本号更新后长时间读到旧值。
 const GENERATION_TTL_MS = 60_000;
 const generationCache = new Map<
   string,
   { value: string; expiresAt: number }
 >();
 
+// ─── 数据内存缓存 ────────────────────────────────────────────────
+// 同一个 Worker 实例，同一个缓存条目在 TTL 内只读一次 KV
+const DATA_TTL_MS = 5 * 60_000; // 5 分钟
+const dataCache = new Map<string, { value: unknown; expiresAt: number }>();
+
 async function readGeneration(
   context: InvalidateContext,
   namespace: string,
 ): Promise<string | null> {
-  // 1. 先查内存
   const cached = generationCache.get(namespace);
   if (cached && Date.now() < cached.expiresAt) {
     return cached.value;
@@ -104,7 +106,6 @@ async function readGeneration(
     value = `v${generation}`;
   }
 
-  // 2. 写入内存
   generationCache.set(namespace, {
     value,
     expiresAt: Date.now() + GENERATION_TTL_MS,
@@ -132,11 +133,17 @@ async function bumpGeneration(
     throw err;
   }
 
-  // 3. 立即更新内存缓存，避免后续请求读到旧版本号
   generationCache.set(namespace, {
     value: `v${generation}`,
     expiresAt: Date.now() + GENERATION_TTL_MS,
   });
+
+  // 清掉这个 namespace 下所有数据内存缓存
+  for (const cacheKey of dataCache.keys()) {
+    if (cacheKey.includes(`:${namespace}:`)) {
+      dataCache.delete(cacheKey);
+    }
+  }
 }
 // ─────────────────────────────────────────────────────────────
 
@@ -175,6 +182,7 @@ async function deleteStorageKey(
       }),
     ),
   );
+  dataCache.delete(serializedKey);
 }
 
 async function readEntry<T>(
@@ -192,6 +200,13 @@ async function readEntry<T>(
   }
 
   const serializedKey = storageKey(version, logicalKey(entry, params));
+
+  // 1. 先查内存
+  const cached = dataCache.get(serializedKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.value as T;
+  }
+
   const stored = await context.env.KV.get(serializedKey, "json").catch((err) =>
     console.error(
       JSON.stringify({
@@ -220,6 +235,11 @@ async function readEntry<T>(
     const parsed = entry.schema.safeParse(stored);
     if (parsed.success) {
       const data = entry.hydrate ? entry.hydrate(parsed.data) : parsed.data;
+      // 2. 写入内存
+      dataCache.set(serializedKey, {
+        value: data,
+        expiresAt: Date.now() + DATA_TTL_MS,
+      });
       if (
         entry.hydrate &&
         JSON.stringify(data) !== JSON.stringify(parsed.data)
@@ -234,6 +254,11 @@ async function readEntry<T>(
   if (loaded === null || loaded === undefined) return loaded as T;
 
   const data = entry.hydrate ? entry.hydrate(loaded) : loaded;
+  // 3. 写入内存
+  dataCache.set(serializedKey, {
+    value: data,
+    expiresAt: Date.now() + DATA_TTL_MS,
+  });
   context.executionCtx.waitUntil(persist(data));
   return data as T;
 }
