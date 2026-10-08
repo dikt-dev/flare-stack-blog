@@ -23,7 +23,7 @@ interface PostRowProps {
     post: AdminPostListItem,
     trigger: HTMLButtonElement | null,
   ) => void;
-  editBasePath?: string;   // ← 新增
+  editBasePath?: string;
 }
 
 export function PostRow({
@@ -31,10 +31,13 @@ export function PostRow({
   sortBy,
   onDelete,
   editorState,
-  editBasePath = "/admin/posts",   // ← 默认文章路径
+  editBasePath = "/admin/posts",
 }: PostRowProps) {
   const title = post.title.trim() || m.common_untitled();
   const date = post[sortBy];
+  const hasCover = Boolean(post.cover);
+  const hasTitle = Boolean(post.title.trim());
+
   return (
     <tr>
       <td>
@@ -50,8 +53,22 @@ export function PostRow({
             state={editorState}
             className="post-list-title-link"
           >
-            <strong>{title}</strong>
-            <span>{post.slug || m.admin_posts_slug_empty()}</span>
+            {/* 封面缩略图 */}
+            {hasCover && post.cover ? (
+              <span className="post-list-thumbnail">
+                <img src={post.cover.url} alt="" loading="lazy" />
+              </span>
+            ) : (
+              <span className="post-list-thumbnail post-list-thumbnail-empty" />
+            )}
+            <span className="post-list-title-text">
+              <strong>{title}</strong>
+              {!hasTitle && post.summary ? (
+                <span>{post.summary}</span>
+              ) : (
+                <span>{post.slug || m.admin_posts_slug_empty()}</span>
+              )}
+            </span>
           </Link>
         </div>
       </td>
@@ -100,6 +117,7 @@ export function PostRow({
   );
 }
 
+// PostRowMenu 保持不变
 function PostRowMenu({
   title,
   onDelete,
