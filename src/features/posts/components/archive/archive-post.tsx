@@ -29,11 +29,8 @@ export function ArchivePost({ post }: ArchivePostProps) {
           </time>
         </div>
 
-        {/* 时间线节点（用 border-l 画竖线） */}
+        {/* 时间线节点（只保留节点，竖线由父容器画） */}
         <div className="w-[15%] md:w-[10%] shrink-0 relative flex items-center">
-          {/* 竖线 */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-black/10 dark:bg-white/10" />
-          {/* 节点 */}
           <div
             className="relative z-10 transition-all mx-auto w-1 h-1 rounded group-hover:h-5
               bg-black/50 dark:bg-white/50 group-hover:bg-(--fuwari-primary)
