@@ -14,7 +14,8 @@ export async function putToR2(
   let finalSize = image.size;
   let finalKey = key;
 
-  if (contentType === "image/gif") {
+  // 前端已经压缩过的 WebP、GIF 动图，直接存
+  if (contentType === "image/gif" || contentType === "image/webp") {
     body = image;
   } else {
     const response = (
@@ -29,7 +30,6 @@ export async function putToR2(
     finalKey = key.replace(/\.[^.]+$/, ".webp");
   }
 
-  // 上传到 R2 时加 images/ 前缀（存储路径）
   const r2Key = `images/${finalKey}`;
 
   await env.R2.put(r2Key, body, {
@@ -59,10 +59,6 @@ export async function getFromR2(env: Env, key: string) {
   return await env.R2.get(key);
 }
 
-/**
- * Upload a site asset (favicon, theme images) to R2 with a fixed key.
- * No DB record; overwrites in place on re-upload.
- */
 export async function putSiteAsset(
   env: Env,
   file: File,
@@ -76,7 +72,6 @@ export async function putSiteAsset(
     },
   });
 
-  // 加上版本号，每次上传都会产生新 URL，强制刷新 CDN 缓存
   const version = Date.now();
   return { key, url: `/asset/${assetPath}?v=${version}` };
 }
