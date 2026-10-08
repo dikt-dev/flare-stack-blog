@@ -5,6 +5,7 @@ import type { EditorView } from "@tiptap/pm/view";
 
 export interface ImageUploadResult {
   url: string;
+  mediaId?: number;
   width?: number;
   height?: number;
 }
@@ -17,11 +18,6 @@ interface ImageUploadOptions {
 declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     imageUpload: {
-      /**
-       * Inserts `file` as an image at `at` (the selection by default), or in
-       * place of the range `at`, and swaps in the uploaded address once the
-       * upload finishes. A failed upload removes the image.
-       */
       uploadImage: (file: File, at?: number | Range) => ReturnType;
     };
   }
@@ -111,6 +107,7 @@ export const ImageUpload = Extension.create<ImageUploadOptions>({
                 view.state.tr.setNodeMarkup(nodePos, undefined, {
                   ...current.attrs,
                   src: result.url,
+                  mediaId: result.mediaId ?? current.attrs.mediaId,
                   width: result.width || current.attrs.width,
                   height: result.height || current.attrs.height,
                   uploadId: null,
