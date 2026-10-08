@@ -1,5 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { Calendar, ChevronRight, Clock, Eye, Tag } from "lucide-react";
+import {
+  Calendar,
+  ChevronRight,
+  Clock,
+  Eye,
+  Quote,
+  Tag,
+} from "lucide-react";
 import {
   getPublicImageSrc,
   PUBLIC_IMAGE_WIDTH,
@@ -45,10 +52,9 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
           {!hasCover && (
             <span
               aria-hidden="true"
-              className="absolute top-3 left-5 text-6xl font-serif leading-none fuwari-text-30 select-none pointer-events-none"
-              style={{ fontFamily: "Georgia, 'Songti SC', serif" }}
+              className="absolute top-4 left-5 fuwari-text-30 select-none pointer-events-none"
             >
-              &ldquo;
+              <Quote size={44} strokeWidth={1.5} />
             </span>
           )}
 
