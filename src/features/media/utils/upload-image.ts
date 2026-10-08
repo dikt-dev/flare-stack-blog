@@ -30,7 +30,7 @@ async function compressImage(file: File): Promise<File> {
     bitmap.close();
 
     const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/webp", 0.75),
+      canvas.toBlob(resolve, "image/webp", 0.65),
     );
     if (!blob) return file;
 
