@@ -29,6 +29,7 @@ async function handleImageUpload(file: File): Promise<ImageUploadResult> {
 
   return {
     url: result.url,
+    mediaId: result.id,   // ← 新增
     width: result.width || undefined,
     height: result.height || undefined,
   };
