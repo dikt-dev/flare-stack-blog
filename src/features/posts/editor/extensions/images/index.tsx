@@ -11,6 +11,10 @@ export const ImageExtension = Image.extend({
         default: null,
         rendered: false,
       },
+      mediaId: {
+        default: null,
+        rendered: false,
+      },
     };
   },
 
