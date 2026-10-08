@@ -22,6 +22,14 @@ const AdminPostCoverSchema = PublicPostCoverSchema.extend({
   fileName: z.string(),
 });
 
+const AdminPostListCoverSchema = z.object({
+  id: z.number().int(),
+  key: z.string(),
+  url: z.string(),
+  width: z.number().int().nullable(),
+  height: z.number().int().nullable(),
+});
+
 const PostSelectSchema = createSelectSchema(PostsTable, {
   publishedAt: coercedDateNullable,
   pinnedAt: coercedDateNullable,
@@ -218,6 +226,7 @@ const AdminPostListItemSchema = z.object({
   pinnedAt: coercedDateNullable,
   createdAt: coercedDate,
   updatedAt: coercedDate,
+  cover: AdminPostListCoverSchema.nullable().catch(null),
   contentJson: NullableJsonContentSchema.optional().describe(
     "Only returned when the request asks for includeContent=true outside the public taxonomy scope.",
   ),
