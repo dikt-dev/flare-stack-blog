@@ -1,3 +1,5 @@
+import { inArray } from "drizzle-orm";
+import { MediaTable } from "@/lib/db/schema";
 import { invalidate } from "@/features/cache/public-cache";
 import * as CategoryRepo from "@/features/categories/data/categories.data";
 import * as MediaRepo from "@/features/media/data/media.data";
@@ -328,6 +330,34 @@ export async function listAdminPostsPage(
       taxonomy: data.taxonomy,
     }),
   ]);
+
+  // 批量查封面：从 items 里收集所有 coverMediaId，一次性查出来
+  const coverIds = items
+    .map((item) => item.coverMediaId)
+    .filter((id): id is number => id != null);
+  const covers = coverIds.length
+    ? await context.db
+        .select({
+          id: MediaTable.id,
+          key: MediaTable.key,
+          url: MediaTable.url,
+          width: MediaTable.width,
+          height: MediaTable.height,
+        })
+        .from(MediaTable)
+        .where(inArray(MediaTable.id, coverIds))
+    : [];
+  const coverById = new Map(covers.map((c) => [c.id, c]));
+
+  // 把 coverMediaId 替换成 cover，并从返回数据里去掉 coverMediaId
+  const itemsWithCover = items.map((item) => {
+    const { coverMediaId, ...rest } = item;
+    return {
+      ...rest,
+      cover: coverMediaId ? coverById.get(coverMediaId) ?? null : null,
+    };
+  });
+
   const total =
     data.status === "draft"
       ? statusCounts.draft
@@ -336,7 +366,7 @@ export async function listAdminPostsPage(
         : data.status
           ? 0
           : statusCounts.draft + statusCounts.published;
-  return { items, total, statusCounts };
+  return { items: itemsWithCover, total, statusCounts };
 }
 
 export async function getPosts(context: DbContext, data: GetPostsInput) {
