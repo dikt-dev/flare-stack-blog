@@ -1,12 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import {
-  Calendar,
-  ChevronRight,
-  Clock,
-  Eye,
-  Quote,
-  Tag,
-} from "lucide-react";
+import { Calendar, ChevronRight, Clock, Eye, Tag } from "lucide-react";
 import {
   getPublicImageSrc,
   PUBLIC_IMAGE_WIDTH,
@@ -48,13 +41,14 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
         ) : null}
 
         <div className="flex flex-col gap-4 px-7 py-8 relative">
-          {/* 无封面时的引号装饰 */}
+          {/* 无封面时的引号装饰（中文引号、淡蓝色） */}
           {!hasCover && (
             <span
               aria-hidden="true"
-              className="absolute top-4 left-5 fuwari-text-30 select-none pointer-events-none"
+              className="absolute top-3 left-5 text-5xl leading-none select-none pointer-events-none"
+              style={{ color: "var(--fuwari-primary)", opacity: 0.5 }}
             >
-              <Quote size={44} strokeWidth={1.5} />
+              &ldquo;
             </span>
           )}
 
