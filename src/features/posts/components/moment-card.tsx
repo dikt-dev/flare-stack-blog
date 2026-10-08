@@ -45,7 +45,7 @@ export function MomentCard({ post, isLast }: MomentCardProps) {
           {!hasCover && (
             <span
               aria-hidden="true"
-              className="absolute top-3 left-5 text-5xl leading-none select-none pointer-events-none"
+              className="absolute top-3 left-5 text-5xl leading-none select-none pointer-events-none font-serif"
               style={{ color: "var(--fuwari-primary)", opacity: 0.5 }}
             >
               “
