@@ -44,6 +44,16 @@ import * as SearchService from "@/features/search/service/search.service";
 import type { PublicPostSnapshot } from "@/lib/db/schema";
 import { err, ok } from "@/lib/errors";
 
+// ─── 后台列表内存缓存 ────────────────────────────────────────────
+// 同一个 Worker 实例 30 秒内不重复查 D1，避免频繁切换页面时卡顿。
+const adminCache = new Map<string, { value: unknown; expiresAt: number }>();
+const ADMIN_CACHE_TTL = 30_000;
+
+function clearAdminCache() {
+  adminCache.clear();
+}
+// ─────────────────────────────────────────────────────────────
+
 function stripPublicSnapshot<
   T extends { publicSnapshotJson?: unknown; publicSlug?: unknown },
 >(post: T): Omit<T, "publicSnapshotJson" | "publicSlug"> {
@@ -196,7 +206,6 @@ export async function generateSlug(
   data: GenerateSlugInput,
 ) {
   const baseSlug = slugify(data.title);
-  // 1. 先查有没有完全一样的 (比如 'hello-world')
   const exactMatch = await PostRepo.slugExists(context.db, baseSlug, {
     excludeId: data.excludeId,
   });
@@ -204,13 +213,10 @@ export async function generateSlug(
     return { slug: baseSlug };
   }
 
-  // 2. 既然 'hello-world' 被占了，那就查所有 'hello-world-%' 的
   const similarSlugs = await PostRepo.findSimilarSlugs(context.db, baseSlug, {
     excludeId: data.excludeId,
   });
 
-  // 3. 在内存里找最大的数字后缀
-  // 正则含义：匹配以 "-数字" 结尾的字符串，并捕获那个数字
   const regex = new RegExp(`^${baseSlug}-(\\d+)$`);
 
   let maxSuffix = 0;
@@ -224,7 +230,6 @@ export async function generateSlug(
     }
   }
 
-  // 4. 结果就是最大值 + 1
   return { slug: `${baseSlug}-${maxSuffix + 1}` };
 }
 
@@ -243,17 +248,6 @@ function randomSlugSuffix() {
   return Math.random().toString(36).slice(2, 8);
 }
 
-/**
- * Inserts a draft, deriving its slug from the title and retrying when a
- * concurrent insert claimed that slug first.
- *
- * `generateSlug` reads the existing slugs before the row is written, so two
- * creates racing on the same title derive the same slug and one of them hits
- * the unique index. Retrying the derived slug clears a single straggler, but
- * a whole batch racing at once keeps re-deriving the same next suffix, so
- * after `SLUG_DERIVED_ATTEMPTS` the losers take a random suffix instead. Only
- * a contended batch ever sees one, so ordinary creates keep a readable slug.
- */
 async function insertDraftWithGeneratedSlug(
   context: DbContext,
   title: string,
@@ -275,11 +269,6 @@ async function insertDraftWithGeneratedSlug(
   }
 }
 
-/**
- * Creates a brand new draft carrying the given content. Unlike
- * `createEmptyPost`, it never reuses an existing empty draft, so a client can
- * safely retry a failed create or create several posts in a row.
- */
 export async function createDraft(context: DbContext, data: CreatePostData) {
   const post = await insertDraftWithGeneratedSlug(context, data.title, {
     title: data.title,
@@ -289,6 +278,7 @@ export async function createDraft(context: DbContext, data: CreatePostData) {
   });
 
   await syncPostMedia(context.db, post);
+  clearAdminCache();
 
   return { id: post.id };
 }
@@ -315,6 +305,8 @@ export async function createEmptyPost(context: DbContext) {
     contentJson: null,
   });
 
+  clearAdminCache();
+
   return { id: post.id };
 }
 
@@ -322,6 +314,28 @@ export async function listAdminPostsPage(
   context: DbContext,
   data: GetPostsInput,
 ) {
+  const cacheKey = JSON.stringify({
+    offset: data.offset,
+    limit: data.limit,
+    status: data.status,
+    search: data.search,
+    taxonomy: data.taxonomy,
+  });
+
+  const cached = adminCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.value as Awaited<ReturnType<typeof buildAdminPostsPage>>;
+  }
+
+  const result = await buildAdminPostsPage(context, data);
+  adminCache.set(cacheKey, {
+    value: result,
+    expiresAt: Date.now() + ADMIN_CACHE_TTL,
+  });
+  return result;
+}
+
+async function buildAdminPostsPage(context: DbContext, data: GetPostsInput) {
   const [items, statusCounts] = await Promise.all([
     getPosts(context, data),
     PostRepo.getAdminPostStatusCounts(context.db, {
@@ -331,7 +345,6 @@ export async function listAdminPostsPage(
     }),
   ]);
 
-  // 批量查封面：从 items 里收集所有 coverMediaId，一次性查出来
   const coverIds = items
     .map((item) => item.coverMediaId)
     .filter((id): id is number => id != null);
@@ -349,7 +362,6 @@ export async function listAdminPostsPage(
     : [];
   const coverById = new Map(covers.map((c) => [c.id, c]));
 
-  // 把 coverMediaId 替换成 cover，并从返回数据里去掉 coverMediaId
   const itemsWithCover = items.map((item) => {
     const { coverMediaId, ...rest } = item;
     return {
@@ -478,6 +490,8 @@ export async function updatePost(
     await syncPostMedia(context.db, updatedPost);
   }
 
+  clearAdminCache();
+
   if (updateData.categoryId !== undefined && updatedPost.publicSnapshotJson) {
     context.executionCtx.waitUntil(
       invalidate.categoryChanged(context, {
@@ -498,6 +512,7 @@ export async function deletePost(
   }
 
   await PostRepo.deletePost(context.db, data.id);
+  clearAdminCache();
 
   const publicSlug = post.publicSlug ?? post.publicSnapshotJson?.slug;
   if (publicSlug) {
@@ -573,6 +588,7 @@ export async function publishPost(
     return err({ reason: "POST_NOT_FOUND" });
   }
   await syncPostMedia(context.db, published);
+  clearAdminCache();
 
   await SearchService.upsert(context, {
     id: publishedPost.id,
@@ -608,6 +624,8 @@ export async function unpublishPost(
     return err({ reason: "POST_NOT_FOUND" });
   }
   await syncPostMedia(context.db, unpublished);
+  clearAdminCache();
+
   await SearchService.deleteIndex(context, { id: post.id });
   await invalidate.postDeleted(context, { slug: publicSlug });
 
