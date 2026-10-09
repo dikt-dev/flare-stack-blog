@@ -1,6 +1,5 @@
 import { Loader2, RefreshCw } from "lucide-react";
 import TextareaAutosize from "react-textarea-autosize";
-import DatePicker from "@/components/ui/date-picker";
 import { CategorySelect } from "@/features/categories/components/category-select";
 import { TagSelector } from "@/features/tags/components/tag-selector";
 import { cn } from "@/lib/utils";
@@ -25,7 +24,6 @@ export function PostEditorMetadata({
   fixedCategoryId,
 }: PostEditorMetadataProps) {
   const categoryLocked = fixedCategoryId !== undefined;
-  // 动态（分类 ID 2）不显示摘要字段
   const isMoment = fixedCategoryId === 2;
 
   return (
@@ -80,27 +78,8 @@ export function PostEditorMetadata({
           </div>
         </label>
 
+        {/* 去掉日期选择器，只保留置顶开关 */}
         <div className="flex items-end gap-3">
-          <label className="grid min-w-0 flex-1 gap-2 text-xs fuwari-text-50">
-            {m.editor_meta_date()}
-            <DatePicker
-              today={post.serverToday}
-              maxDate={post.serverToday}
-              value={
-                post.publishedAt
-                  ? post.publishedAt.toISOString().slice(0, 10)
-                  : ""
-              }
-              onChange={(dateStr) => {
-                if (dateStr && dateStr > post.serverToday) return;
-                onPostChange({
-                  publishedAt: dateStr
-                    ? new Date(`${dateStr}T12:00:00Z`)
-                    : null,
-                });
-              }}
-            />
-          </label>
           <button
             type="button"
             role="switch"
@@ -133,7 +112,6 @@ export function PostEditorMetadata({
           </button>
         </div>
 
-        {/* 动态不显示摘要字段 */}
         {!isMoment && (
           <label className="grid gap-2 text-xs fuwari-text-50">
             {m.editor_meta_summary()}
