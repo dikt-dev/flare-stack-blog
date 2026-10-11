@@ -58,6 +58,30 @@ export default defineConfig((ctx) => {
         BETTER_AUTH_URL: { type: "text", value: "https://ryn.us.ci" },
         GITHUB_CLIENT_ID: { type: "text", value: env.GITHUB_CLIENT_ID },
         ENVIRONMENT: { type: "text", value: "prod" },
+        
+        // ==========================================
+        // 👇 在这里添加 Umami 相关的变量绑定 👇
+        // ==========================================
+        UMAMI_WEBSITE_ID: { 
+          type: "text", 
+          value: "9a4de895-693a-4a4a-a599-53bbc0f11170" // 你的网站 ID
+        },
+        UMAMI_SRC: { 
+          type: "text", 
+          value: "https://umami.fae.us.ci/script.js" // 你的 Umami 追踪脚本地址
+        },
+        UMAMI_API_URL: { 
+          type: "text", 
+          value: "https://umami.fae.us.ci/api" // 你的 Umami API 地址
+        },
+        UMAMI_USERNAME: { 
+          type: "text", 
+          value: "admin" // 你的 Umami 用户名
+        },
+        UMAMI_PASSWORD: { 
+          type: "text", 
+          value: env.UMAMI_PASSWORD || "" // ⚠️ 建议从环境变量读取，不要在代码里硬编码密码
+        },
       },
       exports: {
         default: exports.worker({ cache: { enabled: false } }),
