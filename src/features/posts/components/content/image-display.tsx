@@ -1,7 +1,4 @@
-import {
-  getPublicImageSrc,
-  PUBLIC_IMAGE_WIDTH,
-} from "@/features/media/utils/media.utils";
+import { PUBLIC_IMAGE_WIDTH } from "@/features/media/utils/media.utils";
 import ZoomableImage from "./zoomable-image";
 
 export function ImageDisplay({
@@ -28,8 +25,10 @@ export function ImageDisplay({
         <div className="absolute inset-0 pointer-events-none z-10 bg-transparent dark:bg-black/10 transition-colors duration-300 rounded-xl" />
 
         <ZoomableImage
-          src={getPublicImageSrc(src, PUBLIC_IMAGE_WIDTH.body)}
+          src={src}
+          displayWidth={PUBLIC_IMAGE_WIDTH.body}
           alt={alt}
+          caption={alt}
           width={width}
           height={height}
           // 加上 mx-auto 保证图片本身在容器里居中
