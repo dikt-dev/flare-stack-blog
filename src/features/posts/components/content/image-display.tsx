@@ -16,10 +16,15 @@ export function ImageDisplay({
   height?: number;
 }) {
   return (
-    <figure className="not-prose my-8 group relative block fuwari-onload-animation select-none overflow-hidden rounded-xl">
-      {/* Image Container with Fuwari aesthetics */}
-      <div className="relative">
-        {/* Dark mode overlay to reduce glow - matching original Fuwari */}
+    // 1. 删除了 overflow-hidden rounded-xl，避免背景色被剪裁成圆角
+    // 2. 添加了 bg-transparent 强制背景透明，去除蓝色框
+    // 3. 添加了 flex flex-col items-center justify-center 让内部图片和文字整体居中
+    <figure className="not-prose my-8 group relative flex flex-col items-center justify-center bg-transparent w-full fuwari-onload-animation select-none">
+      
+      {/* Image Container */}
+      {/* 确保图片外层容器也是居中的 */}
+      <div className="relative flex justify-center w-full">
+        {/* Dark mode overlay - 保持原有逻辑 */}
         <div className="absolute inset-0 pointer-events-none z-10 bg-transparent dark:bg-black/10 transition-colors duration-300 rounded-xl" />
 
         <ZoomableImage
@@ -27,7 +32,8 @@ export function ImageDisplay({
           alt={alt}
           width={width}
           height={height}
-          className="w-full h-auto transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] scale-100 group-hover:scale-[1.01]"
+          // 加上 mx-auto 保证图片本身在容器里居中
+          className="w-full h-auto mx-auto transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] scale-100 group-hover:scale-[1.01]"
         />
       </div>
 
