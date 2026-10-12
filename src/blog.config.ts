@@ -13,6 +13,7 @@ export const blogConfig = {
   navLinks: [
   { label: "主页", href: "/" },
   { label: "文章", href: "/posts" },
+  { label: "动态", href: "/moments" },
   { label: "友链", href: "/friend-links" },
 ],
   icons: {
