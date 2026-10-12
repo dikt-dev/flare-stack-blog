@@ -197,11 +197,7 @@ export default function ZoomableImage({
   return (
     <>
       <div
-        className={`cursor-zoom-in group select-none overflow-hidden m-0 p-0 rounded-xl ${
-          isPortrait
-            ? "flex items-center justify-center w-full max-h-[70vh]"
-            : "w-full h-auto"
-        }`}
+        className="cursor-zoom-in group select-none overflow-hidden m-0 p-0 rounded-xl flex items-center justify-center w-full"
         onClick={handleOpen}
       >
         <img
@@ -216,8 +212,8 @@ export default function ZoomableImage({
             className,
             "transition-all duration-500 will-change-transform m-0 p-0",
             isPortrait
-              ? "h-auto w-auto max-h-[70vh] max-w-full mx-auto block"
-              : "w-full h-auto block max-h-[80vh] object-contain",
+              ? "h-auto w-auto max-h-[70vh] max-w-full"
+              : "w-full h-auto max-h-[80vh] object-contain",
           )}
           {...props}
         />
@@ -234,4 +230,3 @@ export default function ZoomableImage({
       </ClientOnly>
     </>
   );
-}
