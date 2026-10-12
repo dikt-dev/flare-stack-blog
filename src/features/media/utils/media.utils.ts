@@ -22,9 +22,9 @@ export function generateKey(fileName: string): string {
 /**
  * 从图片 URL 中提取 R2 key
  * 支持格式：
- * - /images/${key}（媒体库图片）
+ * - /images/${key}
  * - https://img.ryn.us.ci/images/${key}
- * - /asset/${key}（头像、背景图等站点资源）
+ * - /asset/${key}
  * - https://img.ryn.us.ci/asset/${key}
  */
 export function extractImageKey(src: string): string | undefined {
@@ -51,7 +51,6 @@ export function extractImageKey(src: string): string | undefined {
       : prefix;
     if (pathname.startsWith(matchPath)) {
       const rest = pathname.replace(matchPath, "");
-      // asset/ 路径保留前缀，因为存储时就是 asset/xxx
       return prefix.includes("asset") ? `asset/${rest}` : rest;
     }
   }
@@ -65,29 +64,15 @@ export function isGifKey(key: string, contentType?: string | null) {
 export const PUBLIC_IMAGE_WIDTH = {
   banner: 1600,
   cover: 800,
-  body: 800,
+  body: 1600,
   avatar: 400,
 } as const;
 
 export function getOriginalImageUrl(key: string) {
-  // asset/ 开头的走 /asset/ 路径，其他走 /images/
   if (key.startsWith("asset/")) {
     return `https://img.ryn.us.ci/${key}`;
   }
   return `https://img.ryn.us.ci/images/${key}`;
-}
-
-/**
- * The original an image transform reads. It carries the request's `v` so a
- * replaced file at the same key is fetched fresh instead of from the edge
- * cache of the unversioned original.
- */
-export function getTransformSourceUrl(requestUrl: URL, key: string) {
-  const source = new URL(getOriginalImageUrl(key), requestUrl.origin);
-  source.searchParams.set("original", "true");
-  const version = requestUrl.searchParams.get("v");
-  if (version) source.searchParams.set("v", version);
-  return source.toString();
 }
 
 export function hasImageTransformParams(searchParams: URLSearchParams) {
@@ -100,7 +85,6 @@ export function hasImageTransformParams(searchParams: URLSearchParams) {
 }
 
 export function getOptimizedImageUrl(key: string, width?: number) {
-  // 图片压缩已在 putToR2 中完成，直接返回 CDN 地址
   if (key.startsWith("asset/")) {
     return `https://img.ryn.us.ci/${key}`;
   }
@@ -113,7 +97,6 @@ export function getPublicImageSrc(src: string, width: number) {
   const version = new URL(src, "http://dummy.com").searchParams.get("v");
   const optimized = getOptimizedImageUrl(key, width);
   if (!version) return optimized;
-  // 加上版本号避免缓存问题
   return `${optimized}?v=${version}`;
 }
 
@@ -145,4 +128,9 @@ export function buildTransformOptions(
   }
 
   return transformOptions;
+}
+
+/** 获取用于 Cloudflare Image Resizing 的源图 URL */
+export function getTransformSourceUrl(url: URL, key: string): string {
+  return `${url.origin}/images/${key}?original=true`;
 }
