@@ -32,10 +32,8 @@ export function ImageBlock({
       >
         <div
           className={cn(
-            "relative overflow-hidden bg-(--fuwari-btn-regular-bg)",
-            isPortrait
-              ? "flex max-h-[70vh] items-center justify-center"
-              : "max-h-[80vh]",
+            "relative overflow-hidden bg-(--fuwari-btn-regular-bg) flex items-center justify-center",
+            isPortrait ? "max-h-[70vh]" : "max-h-[80vh]",
           )}
           style={{ aspectRatio }}
         >
@@ -43,10 +41,10 @@ export function ImageBlock({
             src={src}
             alt={node.attrs.alt}
             className={cn(
-              "mx-auto transition-opacity duration-300",
+              "transition-opacity duration-300",
               isPortrait
-                ? "mx-auto block h-auto w-auto max-h-[70vh] max-w-full"
-                : "mx-auto h-auto max-h-[80vh] w-full object-contain",
+                ? "block h-auto w-auto max-h-[70vh] max-w-full"
+                : "h-auto max-h-[80vh] w-auto max-w-full object-contain",
               isUploading ? "opacity-50" : "opacity-100",
             )}
           />
