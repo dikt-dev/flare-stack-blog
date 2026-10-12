@@ -64,7 +64,7 @@ export function isGifKey(key: string, contentType?: string | null) {
 export const PUBLIC_IMAGE_WIDTH = {
   banner: 1600,
   cover: 800,
-  body: 1600,
+  body: 800,
   avatar: 400,
 } as const;
 
