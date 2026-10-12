@@ -210,8 +210,15 @@ export default function ZoomableImage({
           fetchPriority={fetchPriority}
           className={cn(
             className,
+<<<<<<< HEAD
             "transition-all duration-500 will-change-transform m-0 p-0 block max-w-full h-auto",
             isPortrait ? "max-h-[70vh]" : "max-h-[80vh] object-contain",
+=======
+            "transition-all duration-500 will-change-transform m-0 p-0",
+            isPortrait
+              ? "h-auto w-auto max-h-[70vh] max-w-full"
+              : "w-full h-auto max-h-[80vh] object-contain",
+>>>>>>> e1362afe4b4f1660bc861f159cfc81552e853970
           )}
           {...props}
         />
@@ -228,4 +235,7 @@ export default function ZoomableImage({
       </ClientOnly>
     </>
   );
+<<<<<<< HEAD
 }
+=======
+>>>>>>> e1362afe4b4f1660bc861f159cfc81552e853970
