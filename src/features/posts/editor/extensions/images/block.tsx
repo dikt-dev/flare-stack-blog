@@ -26,13 +26,15 @@ export function ImageBlock({
     <NodeViewWrapper className="image-node-view not-prose relative my-8 outline-none [&.ProseMirror-selectednode]:outline-none [&.ProseMirror-selectednode]:ring-0">
       <div
         className={cn(
-          "relative overflow-hidden rounded-xl",
+          "relative overflow-hidden rounded-xl flex justify-center w-full", // 1. 添加 flex justify-center w-full 让外层容器居中
           selected && "ring-2 ring-(--fuwari-primary)",
         )}
       >
         <div
           className={cn(
-            "relative overflow-hidden bg-(--fuwari-btn-regular-bg) flex items-center justify-center",
+            // 2. 删除了 bg-(--fuwari-btn-regular-bg)，去除了背景色
+            // 3. 确保内部容器自适应宽度并居中
+            "relative overflow-hidden flex items-center justify-center mx-auto", 
             isPortrait ? "max-h-[70vh]" : "max-h-[80vh]",
           )}
           style={{ aspectRatio }}
@@ -42,9 +44,10 @@ export function ImageBlock({
             alt={node.attrs.alt}
             className={cn(
               "transition-opacity duration-300",
+              // 4. 图片本身加上 mx-auto block 确保居中
               isPortrait
-                ? "block h-auto w-auto max-h-[70vh] max-w-full"
-                : "h-auto max-h-[80vh] w-auto max-w-full object-contain",
+                ? "block h-auto w-auto max-h-[70vh] max-w-full mx-auto"
+                : "block h-auto max-h-[80vh] w-auto max-w-full object-contain mx-auto",
               isUploading ? "opacity-50" : "opacity-100",
             )}
           />
