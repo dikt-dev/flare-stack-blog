@@ -260,8 +260,7 @@ const CreatePostDataSchema = z.object({
     .min(1)
     .describe("Draft title; a unique slug is generated from it."),
   summary: z.string().nullable().optional(),
-  // ✅ 新增：摘要类型，'auto' 为自动，'manual' 为手动
-  summaryType: z.enum(["auto", "manual"]).optional(),
+  summaryType: z.boolean().optional(), // ✅ 必须是 boolean
   contentJson: NullableJsonContentSchema.optional(),
 });
 
