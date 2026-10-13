@@ -23,9 +23,12 @@ export type PublicPostCover = {
 export type PublicPostSnapshot = {
   title: string;
   summary: string | null;
-  summaryType: boolean; // ✅ 新增：摘要类型（true = 手动，false = 自动）
+  // ✅ 新增：摘要类型
+  // false = 自动生成，true = 手动修改
+  summaryType: boolean;
   slug: string;
   contentJson: JSONContent | null;
+  // Historical metadata; live Category/Tag assignments use the relations below.
   tagIds: Array<number>;
   categoryId: number | null;
   publishedAt: string;
@@ -46,7 +49,8 @@ export const PostsTable = sqliteTable(
     title: text().notNull(),
     summary: text(),
     // ✅ 新增：摘要类型标记
-    // false (0) = 自动生成；true (1) = 手动修改
+    // D1/SQLite 底层是 INTEGER，0 = 自动生成，1 = 手动修改
+    // Drizzle 的 mode: "boolean" 会自动把 0/1 映射为 false/true
     summaryType: integer("summary_type", { mode: "boolean" })
       .notNull()
       .default(false),
