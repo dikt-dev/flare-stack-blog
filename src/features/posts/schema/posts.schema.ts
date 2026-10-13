@@ -10,6 +10,9 @@ import { NullableJsonContentSchema } from "./json-content.schema";
 const coercedDate = z.union([z.date(), z.string().pipe(z.coerce.date())]);
 const coercedDateNullable = coercedDate.nullable();
 
+// ✅ 兜底：处理旧数据里没有 summaryType 的情况
+const SummaryTypeSchema = z.boolean().default(false);
+
 const PublicPostCoverSchema = z.object({
   key: z.string(),
   url: z.string(),
@@ -35,9 +38,11 @@ const PostSelectSchema = createSelectSchema(PostsTable, {
   pinnedAt: coercedDateNullable,
   createdAt: coercedDate,
   updatedAt: coercedDate,
+  summaryType: SummaryTypeSchema, // ✅ 强制加默认值兜底
 }).omit({
   publicSnapshotJson: true,
 });
+
 /**
  * Strict on purpose, and narrower than the table.
  *
@@ -74,7 +79,9 @@ export const PostItemSchema = PostSelectSchema.omit({
   readTimeInMinutes: z.number().int().min(1),
   viewCount: z.number().int().nonnegative().optional(),
   cover: PublicPostCoverSchema.nullable().catch(null),
+  summaryType: z.boolean().default(false), // ✅ 双重保险
 });
+
 export const PostListResponseSchema = z.object({
   items: z.array(PostItemSchema),
   nextCursor: z.number().nullable(),
@@ -105,6 +112,7 @@ export const PostWithTocSchema = PostSelectSchema.omit({
       }),
     ),
     cover: PublicPostCoverSchema.nullable().catch(null),
+    summaryType: z.boolean().default(false), // ✅ 双重保险
   })
   .nullable();
 
@@ -117,6 +125,7 @@ export const AdminPostSchema = PostSelectSchema.omit({
     publicSnapshotContentJson: NullableJsonContentSchema,
     serverToday: z.string(),
     cover: AdminPostCoverSchema.nullable(),
+    summaryType: z.boolean().default(false), // ✅ 双重保险
   })
   .nullable();
 
@@ -227,6 +236,7 @@ const AdminPostListItemSchema = z.object({
   createdAt: coercedDate,
   updatedAt: coercedDate,
   cover: AdminPostListCoverSchema.nullable().catch(null),
+  summaryType: z.boolean().default(false), // ✅ 双重保险
   contentJson: NullableJsonContentSchema.optional().describe(
     "Only returned when the request asks for includeContent=true outside the public taxonomy scope.",
   ),
@@ -260,7 +270,8 @@ const CreatePostDataSchema = z.object({
     .min(1)
     .describe("Draft title; a unique slug is generated from it."),
   summary: z.string().nullable().optional(),
-  summaryType: z.boolean().optional(), // ✅ 必须是 boolean
+  // ✅ 改为 boolean，和 PostsTable 的类型保持一致
+  summaryType: z.boolean().optional(),
   contentJson: NullableJsonContentSchema.optional(),
 });
 
