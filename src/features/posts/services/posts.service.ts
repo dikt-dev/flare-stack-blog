@@ -307,7 +307,8 @@ export async function createDraft(context: DbContext, data: CreatePostData) {
     ? data.summary!
     : extractSummaryFromContent(data.contentJson);
 
-  const finalSummaryType = hasManualSummary; // true = 手动, false = 自动
+  // ✅ 如果前端传了 summaryType 就用它，否则根据有没有手填摘要来判断
+  const finalSummaryType = data.summaryType ?? hasManualSummary;
 
   const post = await insertDraftWithGeneratedSlug(context, data.title, {
     title: data.title,
@@ -520,7 +521,8 @@ export async function updatePost(
   const hasNewSummary = newSummary != null && newSummary.trim() !== "";
 
   let finalSummary: string | null = null;
-  let finalSummaryType: boolean = oldPost.summaryType;
+  // ✅ 兜底：如果旧数据没有 summaryType，默认按自动处理
+  let finalSummaryType: boolean = oldPost.summaryType ?? false;
 
   if (hasNewSummary) {
     // 场景 1：用户本次主动填了摘要 → 转为手动
@@ -528,7 +530,7 @@ export async function updatePost(
     finalSummaryType = true;
   } else {
     // 场景 2：用户没填摘要
-    if (oldPost.summaryType === false) {
+    if (finalSummaryType === false) {
       // 之前是自动的 → 用新正文重新生成
       const contentForSummary = data.data.contentJson ?? oldPost.contentJson;
       finalSummary = extractSummaryFromContent(contentForSummary);
