@@ -44,8 +44,36 @@ import * as SearchService from "@/features/search/service/search.service";
 import type { PublicPostSnapshot } from "@/lib/db/schema";
 import { err, ok } from "@/lib/errors";
 
+// ✅ 新增：Tiptap 摘要生成所需的导入
+import { generateText } from "@tiptap/core";
+import { StarterKit } from "@tiptap/starter-kit";
+// ⚠️ 请把你在编辑器里用到的其他 Tiptap 扩展也加到这里（例如 Image, Link 等）
+
+/**
+ * 从正文中提取摘要
+ * 规则：取正文第一段；如果第一段超过 maxLength 字，则截取前 maxLength 字。
+ */
+export function extractSummaryFromContent(
+  contentJson: any,
+  maxLength = 120,
+): string {
+  if (!contentJson) return "";
+  // 1. 用 Tiptap 从 JSON 中提取纯文本
+  const plainText = generateText(contentJson, [StarterKit]);
+  // 2. 按换行切分，过滤空行
+  const lines = plainText
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  // 3. 取第一段
+  const firstParagraph = lines[0] || "";
+  // 4. 超过 120 字则截取前 120 字
+  return firstParagraph.length > maxLength
+    ? firstParagraph.slice(0, maxLength)
+    : firstParagraph;
+}
+
 // ─── 后台列表内存缓存 ────────────────────────────────────────────
-// 同一个 Worker 实例 30 秒内不重复查 D1，避免频繁切换页面时卡顿。
 const adminCache = new Map<string, { value: unknown; expiresAt: number }>();
 const ADMIN_CACHE_TTL = 30_000;
 
@@ -102,6 +130,7 @@ async function buildPublicSnapshot(
   return {
     title: post.title,
     summary: post.summary,
+    summaryType: post.summaryType, // ✅ 新增：快照同步摘要类型
     slug: post.slug,
     contentJson,
     tagIds: [...new Set(post.tags.map((tag) => tag.id))].sort((a, b) => a - b),
@@ -147,6 +176,7 @@ async function createPublishRevision(
     snapshotJson: {
       title: post.title,
       summary: post.summary,
+      summaryType: post.summaryType, // ✅ 新增
       slug: post.slug,
       status: "published",
       publishedAt: toIsoOrNull(post.publishedAt),
@@ -270,9 +300,19 @@ async function insertDraftWithGeneratedSlug(
 }
 
 export async function createDraft(context: DbContext, data: CreatePostData) {
+  // ✅ 判断用户是否手动填了摘要
+  const hasManualSummary = data.summary != null && data.summary.trim() !== "";
+
+  const finalSummary = hasManualSummary
+    ? data.summary!
+    : extractSummaryFromContent(data.contentJson);
+
+  const finalSummaryType = hasManualSummary; // true = 手动, false = 自动
+
   const post = await insertDraftWithGeneratedSlug(context, data.title, {
     title: data.title,
-    summary: data.summary ?? null,
+    summary: finalSummary,
+    summaryType: finalSummaryType, // ✅ 写入摘要类型
     status: "draft",
     contentJson: normalizePostContent(data.contentJson ?? null),
   });
@@ -301,6 +341,7 @@ export async function createEmptyPost(context: DbContext) {
   const post = await insertDraftWithGeneratedSlug(context, "", {
     title: "",
     summary: "",
+    summaryType: false, // ✅ 空草稿默认为自动状态
     status: "draft",
     contentJson: null,
   });
@@ -447,6 +488,13 @@ export async function updatePost(
   context: DbContext & { executionCtx: ExecutionContext; env?: Env },
   data: UpdatePostInput,
 ) {
+  // 1. 获取旧文章（用于判断摘要类型）
+  const oldPost = await PostRepo.findPostById(context.db, data.id);
+  if (!oldPost) {
+    return err({ reason: "POST_NOT_FOUND" });
+  }
+
+  // 2. 封面 / 分类校验
   if (data.data.coverMediaId != null) {
     const coverMedia = await MediaRepo.findMediaById(
       context.db,
@@ -467,13 +515,44 @@ export async function updatePost(
     }
   }
 
-  const updateData =
-    data.data.contentJson !== undefined
-      ? {
-          ...data.data,
-          contentJson: normalizePostContent(data.data.contentJson),
-        }
-      : data.data;
+  // ================= 摘要自动填充核心逻辑 =================
+  const newSummary = data.data.summary;
+  const hasNewSummary = newSummary != null && newSummary.trim() !== "";
+
+  let finalSummary: string | null = null;
+  let finalSummaryType: boolean = oldPost.summaryType;
+
+  if (hasNewSummary) {
+    // 场景 1：用户本次主动填了摘要 → 转为手动
+    finalSummary = newSummary!;
+    finalSummaryType = true;
+  } else {
+    // 场景 2：用户没填摘要
+    if (oldPost.summaryType === false) {
+      // 之前是自动的 → 用新正文重新生成
+      const contentForSummary = data.data.contentJson ?? oldPost.contentJson;
+      finalSummary = extractSummaryFromContent(contentForSummary);
+      finalSummaryType = false;
+    } else {
+      // 之前是手动的 → 保留旧摘要，不覆盖
+      finalSummary = oldPost.summary;
+      finalSummaryType = true;
+    }
+  }
+  // ========================================================
+
+  // 3. 组装更新数据
+  const updateData: any = {
+    ...data.data,
+    summary: finalSummary,
+    summaryType: finalSummaryType,
+  };
+
+  if (data.data.contentJson !== undefined) {
+    updateData.contentJson = normalizePostContent(data.data.contentJson);
+  }
+
+  // 4. 执行更新
   const updatedPost = await PostRepo.updatePost(
     context.db,
     data.id,
