@@ -23,9 +23,9 @@ export type PublicPostCover = {
 export type PublicPostSnapshot = {
   title: string;
   summary: string | null;
+  summaryType: boolean; // ✅ 新增：摘要类型（true = 手动，false = 自动）
   slug: string;
   contentJson: JSONContent | null;
-  // Historical metadata; live Category/Tag assignments use the relations below.
   tagIds: Array<number>;
   categoryId: number | null;
   publishedAt: string;
@@ -45,6 +45,11 @@ export const PostsTable = sqliteTable(
     id,
     title: text().notNull(),
     summary: text(),
+    // ✅ 新增：摘要类型标记
+    // false (0) = 自动生成；true (1) = 手动修改
+    summaryType: integer("summary_type", { mode: "boolean" })
+      .notNull()
+      .default(false),
     slug: text().notNull().unique(),
 
     contentJson: text("content_json", { mode: "json" }).$type<JSONContent>(),
