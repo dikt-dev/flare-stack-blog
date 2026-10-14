@@ -41,6 +41,17 @@ function getSmtpAuthTypes(): AuthType[] {
   return ["plain", "login", "cram-md5"];
 }
 
+/**
+ * 把邮件签名拼接到 HTML 末尾。
+ * 如果签名为空，则原样返回。
+ */
+function appendEmailSignature(html: string, signature: string | null | undefined) {
+  const trimmed = signature?.trim() || "";
+  if (!trimmed) return html;
+  const signatureHtml = trimmed.replace(/\n/g, "<br />");
+  return `${html}<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px;">${signatureHtml}</div>`;
+}
+
 export function isEmailConfigured(
   email:
     | {
@@ -151,6 +162,16 @@ export async function testEmailConnection(
       resolveSiteConfig(await ConfigRepo.getSystemConfig(context.db)),
     );
 
+    // ✅ 读取签名
+    const config = resolveSystemConfig(
+      await ConfigRepo.getSystemConfig(context.db),
+    );
+    const emailSignature = config?.notification?.emailSignature;
+
+    // ✅ 渲染测试邮件内容，并拼接签名
+    const baseHtml = renderToStaticMarkup(TestEmail({ locale: LOCALE, site }));
+    const finalHtml = appendEmailSignature(baseHtml, emailSignature);
+
     const { WorkerMailer } = await import("worker-mailer");
     await WorkerMailer.send(
       {
@@ -170,7 +191,7 @@ export async function testEmailConnection(
         },
         to: context.session.user.email,
         subject: m.settings_email_test_mail_subject({}, { locale: LOCALE }),
-        html: renderToStaticMarkup(TestEmail({ locale: LOCALE, site })),
+        html: finalHtml, // ✅ 用拼接后的 HTML
       },
     );
 
@@ -283,13 +304,11 @@ export async function sendEmail(
   const config = await ConfigService.getSystemConfig(context);
   const email = config?.email;
   // ✅ 读取通知配置里的邮件签名
-  const emailSignature = config?.notification?.emailSignature?.trim() || "";
+  const emailSignature = config?.notification?.emailSignature;
 
   if (isNotInProduction(context.env)) {
     // 开发环境日志里也带上签名，方便本地预览效果
-    const previewHtml = emailSignature
-      ? `${options.html}<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px;">${emailSignature.replace(/\n/g, "<br />")}</div>`
-      : options.html;
+    const previewHtml = appendEmailSignature(options.html, emailSignature);
     console.log(
       `[EMAIL_SERVICE] 开发环境跳过发送至 ${options.to} 的邮件：${options.subject}:\n${previewHtml}`,
     );
@@ -304,10 +323,8 @@ export async function sendEmail(
   try {
     const security = resolveTransportSecurity(email.port);
 
-    // ✅ 拼接邮件签名：如果有签名，追加到正文末尾
-    const finalHtml = emailSignature
-      ? `${options.html}<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px;">${emailSignature.replace(/\n/g, "<br />")}</div>`
-      : options.html;
+    // ✅ 拼接邮件签名
+    const finalHtml = appendEmailSignature(options.html, emailSignature);
 
     const { WorkerMailer } = await import("worker-mailer");
     await WorkerMailer.send(
