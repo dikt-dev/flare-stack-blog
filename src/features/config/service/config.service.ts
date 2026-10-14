@@ -160,10 +160,11 @@ export async function updateSystemConfig(
     const rows = await context.db
       .update(SystemConfigTable)
       .set({
-        configJson: JSON.stringify({
+        // ✅ 不要再手动 JSON.stringify，Drizzle 会自己处理
+        configJson: {
           ...nextConfigWithSignature,
           schemaVersion: 1,
-        }),
+        },
         siteRevision:
           current.siteRevision + (data.section === "site" ? 1 : 0),
         notificationRevision:
