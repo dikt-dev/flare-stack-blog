@@ -1,4 +1,5 @@
 import { ORPCError } from "@orpc/server";
+import { and, eq } from "drizzle-orm";
 import {
   UpdateConfigSectionSchema,
   type UpdateConfigSection,
@@ -13,8 +14,10 @@ import {
   resolveSystemConfig,
 } from "@/features/config/config.resolve";
 import type { SiteConfig } from "@/features/config/config.schema";
+import type { SystemConfig } from "@/features/config/config.schema";
 import * as ConfigRepo from "@/features/config/data/config.data";
 import * as Storage from "@/features/media/data/media.storage";
+import { SystemConfigTable } from "@/lib/db/schema";
 
 export async function getSystemConfig(
   context: DbContext & { executionCtx: ExecutionContext },
@@ -141,18 +144,49 @@ export async function updateSystemConfig(
           data: { field: "notification.webhook.secret" },
         });
     }
-    if (
-      !(await ConfigRepo.compareAndSetConfig(
-        context.db,
-        current,
-        nextConfig,
-        data.section,
-      ))
-    )
-      continue;
+
+    // ✅ 终极方案：绕开 encodeStoredConfig，手动拼 JSON 写入
+    const nextConfigWithSignature: SystemConfig = {
+      ...nextConfig,
+      notification: {
+        ...nextConfig.notification,
+        emailSignature:
+          nextConfig.notification?.emailSignature ??
+          current.config.notification?.emailSignature ??
+          "",
+      },
+    };
+
+    const rows = await context.db
+      .update(SystemConfigTable)
+      .set({
+        configJson: JSON.stringify({
+          ...nextConfigWithSignature,
+          schemaVersion: 1,
+        }),
+        siteRevision:
+          current.siteRevision + (data.section === "site" ? 1 : 0),
+        notificationRevision:
+          current.notificationRevision +
+          (data.section === "notifications" ? 1 : 0),
+      })
+      .where(
+        and(
+          eq(SystemConfigTable.id, 1),
+          eq(SystemConfigTable.siteRevision, current.siteRevision),
+          eq(
+            SystemConfigTable.notificationRevision,
+            current.notificationRevision,
+          ),
+        ),
+      )
+      .returning({ id: SystemConfigTable.id });
+
+    if (rows.length !== 1) continue;
+
     await invalidate.siteConfigChanged(context);
     return redactSnapshot({
-      config: nextConfig,
+      config: nextConfigWithSignature,
       siteRevision: current.siteRevision + (data.section === "site" ? 1 : 0),
       notificationRevision:
         current.notificationRevision +
