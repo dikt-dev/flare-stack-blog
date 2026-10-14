@@ -280,15 +280,21 @@ export async function sendEmail(
     }
   }
 
+  const config = await ConfigService.getSystemConfig(context);
+  const email = config?.email;
+  // ✅ 读取通知配置里的邮件签名
+  const emailSignature = config?.notification?.emailSignature?.trim() || "";
+
   if (isNotInProduction(context.env)) {
+    // 开发环境日志里也带上签名，方便本地预览效果
+    const previewHtml = emailSignature
+      ? `${options.html}<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px;">${emailSignature.replace(/\n/g, "<br />")}</div>`
+      : options.html;
     console.log(
-      `[EMAIL_SERVICE] 开发环境跳过发送至 ${options.to} 的邮件：${options.subject}:\n${options.html}`,
+      `[EMAIL_SERVICE] 开发环境跳过发送至 ${options.to} 的邮件：${options.subject}:\n${previewHtml}`,
     );
     return ok({ success: true });
   }
-
-  const config = await ConfigService.getSystemConfig(context);
-  const email = config?.email;
 
   if (!isEmailConfigured(email)) {
     console.warn(`[EMAIL_SERVICE] 未配置邮件服务，跳过发送至: ${options.to}`);
@@ -297,6 +303,11 @@ export async function sendEmail(
 
   try {
     const security = resolveTransportSecurity(email.port);
+
+    // ✅ 拼接邮件签名：如果有签名，追加到正文末尾
+    const finalHtml = emailSignature
+      ? `${options.html}<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:14px;">${emailSignature.replace(/\n/g, "<br />")}</div>`
+      : options.html;
 
     const { WorkerMailer } = await import("worker-mailer");
     await WorkerMailer.send(
@@ -317,7 +328,7 @@ export async function sendEmail(
         },
         to: options.to,
         subject: options.subject,
-        html: options.html,
+        html: finalHtml, // ✅ 用拼接好的 HTML
         headers: options.headers,
       },
     );
