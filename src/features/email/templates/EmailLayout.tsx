@@ -100,18 +100,7 @@ export const EmailLayout = ({
                 {children}
               </td>
             </tr>
-            <tr>
-              <td
-                style={{
-                  padding: "20px 8px 0",
-                  textAlign: "center",
-                  color: theme.muted,
-                  fontSize: "12px",
-                }}
-              >
-                &copy; {new Date().getUTCFullYear()} {site.title}
-              </td>
-            </tr>
+            {/* 版权已移到 appendEmailSignature，在签名之后输出 */}
           </tbody>
         </table>
       </div>
