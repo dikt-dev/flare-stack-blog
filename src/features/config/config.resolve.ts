@@ -52,12 +52,12 @@ export function resolveSiteConfig(
     description: config?.site?.description ?? blogConfig.description,
     social: migrateSocial(config?.site?.social),
     navLinks: (() => {
-  const normalized = normalizeNavLinks(config?.site?.navLinks);
-  // 数据库里没有导航时，用默认配置兜底
-  return normalized.length > 0
-    ? normalized
-    : normalizeNavLinks(blogConfig.navLinks);
-})(),
+      const normalized = normalizeNavLinks(config?.site?.navLinks);
+      // 数据库里没有导航时，用默认配置兜底
+      return normalized.length > 0
+        ? normalized
+        : normalizeNavLinks(blogConfig.navLinks);
+    })(),
     icons: {
       faviconSvg:
         config?.site?.icons?.faviconSvg || blogConfig.icons.faviconSvg,
@@ -125,6 +125,8 @@ export function resolveSystemConfig(
       user: {
         emailEnabled: config?.notification?.user?.emailEnabled ?? true,
       },
+      // ✅ 关键修复：透传 emailSignature，否则读回永远是空
+      emailSignature: config?.notification?.emailSignature ?? "",
       webhook: resolveWebhookEndpoint(config?.notification),
     },
     site: resolveSiteConfig(config),
