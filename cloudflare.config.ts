@@ -49,45 +49,21 @@ export default defineConfig((ctx) => {
             ]),
       ],
       env: {
+        // 只保留"绑定"(bindings)——这些必须在 wrangler 里声明
         DB: bindings.d1({ id: d1DatabaseId }),
         KV: bindings.kv({ id: kvNamespaceId }),
         R2: bindings.r2({ name: bucketName }),
         IMAGES: bindings.images({}),
         QUEUE: bindings.queue({ name: queueName }),
-        DOMAIN: { type: "text", value: env.DOMAIN?.trim() ?? "" },
-        BETTER_AUTH_URL: {
-          type: "text",
-          value: env.BETTER_AUTH_URL?.trim() ?? "",
-        },
-        GITHUB_CLIENT_ID: { type: "text", value: env.GITHUB_CLIENT_ID },
-        ENVIRONMENT: { type: "text", value: env.ENVIRONMENT?.trim() || "prod" },
 
-        // ==========================================
-        // Umami 相关变量绑定（全部从环境变量读取）
-        // 本地开发：写入 .dev.vars
-        // 生产环境：Cloudflare Dashboard → Worker → Settings → Variables
-        //           建议把 UMAMI_PASSWORD 设为 Secret 类型
-        // ==========================================
-        UMAMI_WEBSITE_ID: {
-          type: "text",
-          value: env.UMAMI_WEBSITE_ID?.trim() ?? "",
-        },
-        UMAMI_SRC: {
-          type: "text",
-          value: env.UMAMI_SRC?.trim() ?? "",
-        },
-        UMAMI_API_URL: {
-          type: "text",
-          value: env.UMAMI_API_URL?.trim() ?? "",
-        },
-        UMAMI_USERNAME: {
-          type: "text",
-          value: env.UMAMI_USERNAME?.trim() ?? "",
-        },
-        UMAMI_PASSWORD: {
-          type: "text",
-          value: env.UMAMI_PASSWORD ?? "",
-        },
+        // ⚠️ 下面这些全部交给 Cloudflare Dashboard 管理，不要在这里声明：
+        // DOMAIN, BETTER_AUTH_URL, BETTER_AUTH_SECRET,
+        // GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET,
+        // TURNSTILE_SECRET_KEY, ENVIRONMENT,
+        // UMAMI_WEBSITE_ID, UMAMI_SRC, UMAMI_API_URL,
+        // UMAMI_USERNAME, UMAMI_PASSWORD
+        //
+        // 声明与 Dashboard 里的变量冲突，Dashboard 的会被忽略。
       },
       exports: {
         default: exports.worker({ cache: { enabled: false } }),
