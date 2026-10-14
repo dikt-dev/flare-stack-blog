@@ -54,33 +54,39 @@ export default defineConfig((ctx) => {
         R2: bindings.r2({ name: bucketName }),
         IMAGES: bindings.images({}),
         QUEUE: bindings.queue({ name: queueName }),
-        DOMAIN: { type: "text", value: "ryn.us.ci" },
-        BETTER_AUTH_URL: { type: "text", value: "https://ryn.us.ci" },
+        DOMAIN: { type: "text", value: env.DOMAIN?.trim() ?? "" },
+        BETTER_AUTH_URL: {
+          type: "text",
+          value: env.BETTER_AUTH_URL?.trim() ?? "",
+        },
         GITHUB_CLIENT_ID: { type: "text", value: env.GITHUB_CLIENT_ID },
-        ENVIRONMENT: { type: "text", value: "prod" },
-        
+        ENVIRONMENT: { type: "text", value: env.ENVIRONMENT?.trim() || "prod" },
+
         // ==========================================
-        // 👇 在这里添加 Umami 相关的变量绑定 👇
+        // Umami 相关变量绑定（全部从环境变量读取）
+        // 本地开发：写入 .dev.vars
+        // 生产环境：Cloudflare Dashboard → Worker → Settings → Variables
+        //           建议把 UMAMI_PASSWORD 设为 Secret 类型
         // ==========================================
-        UMAMI_WEBSITE_ID: { 
-          type: "text", 
-          value: "9a4de895-693a-4a4a-a599-53bbc0f11170" // 你的网站 ID
+        UMAMI_WEBSITE_ID: {
+          type: "text",
+          value: env.UMAMI_WEBSITE_ID?.trim() ?? "",
         },
-        UMAMI_SRC: { 
-          type: "text", 
-          value: "https://umami.fae.us.ci/script.js" // 你的 Umami 追踪脚本地址
+        UMAMI_SRC: {
+          type: "text",
+          value: env.UMAMI_SRC?.trim() ?? "",
         },
-        UMAMI_API_URL: { 
-          type: "text", 
-          value: "https://umami.fae.us.ci/api" // 你的 Umami API 地址
+        UMAMI_API_URL: {
+          type: "text",
+          value: env.UMAMI_API_URL?.trim() ?? "",
         },
-        UMAMI_USERNAME: { 
-          type: "text", 
-          value: "admin" // 你的 Umami 用户名
+        UMAMI_USERNAME: {
+          type: "text",
+          value: env.UMAMI_USERNAME?.trim() ?? "",
         },
-        UMAMI_PASSWORD: { 
-          type: "text", 
-          value: env.UMAMI_PASSWORD || "" // ⚠️ 建议从环境变量读取，不要在代码里硬编码密码
+        UMAMI_PASSWORD: {
+          type: "text",
+          value: env.UMAMI_PASSWORD ?? "",
         },
       },
       exports: {
