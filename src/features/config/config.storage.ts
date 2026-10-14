@@ -20,5 +20,17 @@ export function decodeStoredConfig(value: unknown): SystemConfig {
 }
 
 export function encodeStoredConfig(value: SystemConfig): StoredSystemConfig {
-  return { ...decodeStoredConfig(value), schemaVersion: CONFIG_SCHEMA_VERSION };
+  const decoded = decodeStoredConfig(value);
+  // ✅ 强制保留 emailSignature，避免被 SystemConfigSchema 在解析时清洗掉
+  return {
+    ...decoded,
+    notification: {
+      ...decoded.notification,
+      emailSignature:
+        value.notification?.emailSignature ??
+        decoded.notification?.emailSignature ??
+        "",
+    },
+    schemaVersion: CONFIG_SCHEMA_VERSION,
+  };
 }
