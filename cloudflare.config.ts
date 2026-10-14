@@ -49,13 +49,38 @@ export default defineConfig((ctx) => {
             ]),
       ],
       env: {
-        // ⚠️ 只保留 bindings，其它变量全部交给 Cloudflare Dashboard
-        // 一旦这里声明了普通变量，Dashboard 的对应变量就会被覆盖清空
+        // ===== Bindings（只能放 wrangler） =====
         DB: bindings.d1({ id: d1DatabaseId }),
         KV: bindings.kv({ id: kvNamespaceId }),
         R2: bindings.r2({ name: bucketName }),
         IMAGES: bindings.images({}),
         QUEUE: bindings.queue({ name: queueName }),
+
+        // ===== 普通变量（放 wrangler，避免被 Dashboard 清） =====
+        DOMAIN: { type: "text", value: "ryn.us.ci" },
+        BETTER_AUTH_URL: { type: "text", value: "https://ryn.us.ci" },
+        ENVIRONMENT: { type: "text", value: "prod" },
+        GITHUB_CLIENT_ID: { type: "text", value: env.GITHUB_CLIENT_ID ?? "" },
+
+        UMAMI_WEBSITE_ID: {
+          type: "text",
+          value: "9a4de895-693a-4a4a-a599-53bbc0f11170",
+        },
+        UMAMI_SRC: {
+          type: "text",
+          value: "https://umami.fae.us.ci/script.js",
+        },
+        UMAMI_API_URL: {
+          type: "text",
+          value: "https://umami.fae.us.ci/api",
+        },
+        UMAMI_USERNAME: { type: "text", value: "admin" },
+
+        // ===== 敏感值（只声明类型，值留在 Dashboard Secret） =====
+        BETTER_AUTH_SECRET: { type: "secret" },
+        GITHUB_CLIENT_SECRET: { type: "secret" },
+        TURNSTILE_SECRET_KEY: { type: "secret" },
+        UMAMI_PASSWORD: { type: "secret" },
       },
       exports: {
         default: exports.worker({ cache: { enabled: false } }),
