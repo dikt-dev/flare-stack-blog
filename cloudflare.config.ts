@@ -49,21 +49,13 @@ export default defineConfig((ctx) => {
             ]),
       ],
       env: {
-        // 只保留"绑定"(bindings)——这些必须在 wrangler 里声明
+        // ⚠️ 只保留 bindings，其它变量全部交给 Cloudflare Dashboard
+        // 一旦这里声明了普通变量，Dashboard 的对应变量就会被覆盖清空
         DB: bindings.d1({ id: d1DatabaseId }),
         KV: bindings.kv({ id: kvNamespaceId }),
         R2: bindings.r2({ name: bucketName }),
         IMAGES: bindings.images({}),
         QUEUE: bindings.queue({ name: queueName }),
-
-        // ⚠️ 下面这些全部交给 Cloudflare Dashboard 管理，不要在这里声明：
-        // DOMAIN, BETTER_AUTH_URL, BETTER_AUTH_SECRET,
-        // GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET,
-        // TURNSTILE_SECRET_KEY, ENVIRONMENT,
-        // UMAMI_WEBSITE_ID, UMAMI_SRC, UMAMI_API_URL,
-        // UMAMI_USERNAME, UMAMI_PASSWORD
-        //
-        // 声明与 Dashboard 里的变量冲突，Dashboard 的会被忽略。
       },
       exports: {
         default: exports.worker({ cache: { enabled: false } }),
