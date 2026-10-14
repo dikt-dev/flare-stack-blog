@@ -53,6 +53,8 @@ function redactSnapshot(
       },
       notification: {
         ...config.notification,
+        // ✅ 确保 emailSignature 永远存在于返回的配置里
+        emailSignature: config.notification?.emailSignature ?? "",
         webhook: { url: config.notification?.webhook?.url ?? "", secret: "" },
       },
     },
@@ -103,12 +105,15 @@ export async function updateSystemConfig(
               ),
             },
             notification: {
+              // 先用数据库旧值打底，确保所有 key 都在
+              ...current.config.notification,
+              // 再用前端新值覆盖
               ...data.notification,
-              // ✅ 确保 emailSignature 有值（前端传了就覆盖，没传就保持数据库原值）
+              // ✅ 最关键的一步：强制保留 emailSignature，绝不让它被覆盖
               emailSignature:
-                data.notification.emailSignature ??
-                current.config.notification?.emailSignature ??
-                "",
+                data.notification.emailSignature !== undefined
+                  ? data.notification.emailSignature
+                  : (current.config.notification?.emailSignature ?? ""),
               webhook: {
                 url: data.notification.webhook.url,
                 secret: changeSecret(
