@@ -38,6 +38,9 @@ export const SystemConfigSchema = z.object({
           emailEnabled: z.boolean().optional(),
         })
         .optional(),
+      // ✅ 新增：邮件签名
+      // 每次发送邮件时自动附加到邮件正文末尾
+      emailSignature: z.string().optional().default(""),
       webhook: webhookEndpointSchema.optional(),
       webhooks: z.array(legacyWebhookEndpointSchema).optional(),
     })
@@ -66,6 +69,8 @@ export const DEFAULT_CONFIG: SystemConfig = {
     user: {
       emailEnabled: true,
     },
+    // ✅ 默认签名为空字符串
+    emailSignature: "",
     webhook: {
       url: "",
       secret: "",
