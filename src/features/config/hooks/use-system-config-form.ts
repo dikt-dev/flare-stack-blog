@@ -19,13 +19,16 @@ const emptySnapshot: AdminConfigSnapshot = {
   secrets: { emailPasswordConfigured: false, webhookSecretConfigured: false },
   schemaVersion: 1,
 };
+
 const valuesOf = (snapshot: AdminConfigSnapshot): ConfigFormValues => ({
   ...snapshot.config,
   clearEmailPassword: false,
   clearWebhookSecret: false,
 });
+
 const same = (a: unknown, b: unknown) =>
   JSON.stringify(a) === JSON.stringify(b);
+
 const secretChange = (
   value: string | undefined,
   clear: boolean,
@@ -49,6 +52,7 @@ export function useSystemConfigForm(nav: SettingsPageId | null = null) {
     notifications: false,
   });
   const initialized = useRef(false);
+
   useEffect(() => {
     if (!snapshot || isSubmitting) return;
     if (!initialized.current || !isDirty) {
@@ -57,6 +61,7 @@ export function useSystemConfigForm(nav: SettingsPageId | null = null) {
       methods.reset(valuesOf(snapshot));
     }
   }, [snapshot, isDirty, isSubmitting, methods]);
+
   const section = nav === "site" ? "site" : "notifications";
   const sectionDirty =
     section === "site"
@@ -67,6 +72,7 @@ export function useSystemConfigForm(nav: SettingsPageId | null = null) {
           dirtyFields.clearEmailPassword ||
           dirtyFields.clearWebhookSecret
         );
+
   // Refresh just one section while keeping the other section's draft and baseline.
   const accept = (incoming: AdminConfigSnapshot, desired: ConfigFormValues) => {
     const next =
@@ -102,6 +108,7 @@ export function useSystemConfigForm(nav: SettingsPageId | null = null) {
         methods.setValue(field, desired[field], { shouldDirty: true });
     }
   };
+
   const discardSection = async () => {
     const result = await reload();
     if (!result.data || result.isError) {
@@ -124,6 +131,7 @@ export function useSystemConfigForm(nav: SettingsPageId | null = null) {
     );
     setConflicts((previous) => ({ ...previous, [section]: false }));
   };
+
   const onSubmit = async (event?: FormEvent) => {
     event?.preventDefault();
     if (isSubmitting || !sectionDirty || (nav !== "site" && nav !== "notify"))
@@ -176,7 +184,7 @@ export function useSystemConfigForm(nav: SettingsPageId | null = null) {
                 },
               },
               user: { emailEnabled: notification?.user?.emailEnabled ?? true },
-              // ✅ 新增：把 emailSignature 传下去
+              // ✅ 提交时带上 emailSignature
               emailSignature: notification?.emailSignature ?? "",
               webhook: { url: notification?.webhook?.url.trim() ?? "" },
             },
@@ -220,7 +228,14 @@ export function useSystemConfigForm(nav: SettingsPageId | null = null) {
         desired = {
           ...latest,
           email: saved.config.email,
-          notification: saved.config.notification,
+          // ✅ 关键修复：保留 submitted 里的 emailSignature，避免保存后输入框清空
+          notification: {
+            ...saved.config.notification,
+            emailSignature:
+              submitted.notification?.emailSignature ??
+              saved.config.notification?.emailSignature ??
+              "",
+          },
           clearEmailPassword: false,
           clearWebhookSecret: false,
         };
@@ -243,6 +258,7 @@ export function useSystemConfigForm(nav: SettingsPageId | null = null) {
       setSubmitting(false);
     }
   };
+
   return {
     methods,
     isLoading,
