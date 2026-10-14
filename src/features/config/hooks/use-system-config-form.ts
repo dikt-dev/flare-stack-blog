@@ -176,6 +176,8 @@ export function useSystemConfigForm(nav: SettingsPageId | null = null) {
                 },
               },
               user: { emailEnabled: notification?.user?.emailEnabled ?? true },
+              // ✅ 新增：把 emailSignature 传下去
+              emailSignature: notification?.emailSignature ?? "",
               webhook: { url: notification?.webhook?.url.trim() ?? "" },
             },
             secrets: {
