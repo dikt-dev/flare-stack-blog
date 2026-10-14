@@ -147,7 +147,9 @@ export function useSystemConfigForm(nav: SettingsPageId | null = null) {
     methods.clearErrors();
     const submitted = structuredClone(methods.getValues());
     const email = submitted.email ?? {};
-    const notification = submitted.notification;
+    // ✅ 直接从 submitted 里读取 emailSignature，避免解构导致引用丢失
+    const emailSignature = submitted.notification?.emailSignature ?? "";
+
     const parsedSite =
       section === "site"
         ? createSiteConfigInputFormSchema(m).safeParse(submitted.site)
@@ -180,13 +182,17 @@ export function useSystemConfigForm(nav: SettingsPageId | null = null) {
             notification: {
               admin: {
                 channels: {
-                  email: notification?.admin?.channels?.email ?? true,
+                  email: submitted.notification?.admin?.channels?.email ?? true,
                 },
               },
-              user: { emailEnabled: notification?.user?.emailEnabled ?? true },
-              // ✅ 提交时带上 emailSignature
-              emailSignature: notification?.emailSignature ?? "",
-              webhook: { url: notification?.webhook?.url.trim() ?? "" },
+              user: {
+                emailEnabled: submitted.notification?.user?.emailEnabled ?? true,
+              },
+              // ✅ 使用从 submitted 里直接取到的值
+              emailSignature: emailSignature,
+              webhook: {
+                url: submitted.notification?.webhook?.url.trim() ?? "",
+              },
             },
             secrets: {
               emailPassword: secretChange(
@@ -194,7 +200,7 @@ export function useSystemConfigForm(nav: SettingsPageId | null = null) {
                 submitted.clearEmailPassword,
               ),
               webhookSecret: secretChange(
-                notification?.webhook?.secret,
+                submitted.notification?.webhook?.secret,
                 submitted.clearWebhookSecret,
               ),
             },
@@ -228,7 +234,7 @@ export function useSystemConfigForm(nav: SettingsPageId | null = null) {
         desired = {
           ...latest,
           email: saved.config.email,
-          // ✅ 关键修复：保留 submitted 里的 emailSignature，避免保存后输入框清空
+          // ✅ 保留 submitted 里的 emailSignature
           notification: {
             ...saved.config.notification,
             emailSignature:
