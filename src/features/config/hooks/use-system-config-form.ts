@@ -137,13 +137,6 @@ export function useSystemConfigForm(nav: SettingsPageId | null = null) {
     if (isSubmitting || !sectionDirty || (nav !== "site" && nav !== "notify"))
       return;
 
-    // 手动触发所有字段的校验（包括 NavLinks 的 validate 规则）
-    // const valid = await methods.trigger();
-    // if (!valid) {
-    //   toast.error("表单有错误，请检查标红的字段");
-    //   return;
-    // }
-
     methods.clearErrors();
     const submitted = structuredClone(methods.getValues());
     const email = submitted.email ?? {};
@@ -186,7 +179,8 @@ export function useSystemConfigForm(nav: SettingsPageId | null = null) {
                 },
               },
               user: {
-                emailEnabled: submitted.notification?.user?.emailEnabled ?? true,
+                emailEnabled:
+                  submitted.notification?.user?.emailEnabled ?? true,
               },
               // ✅ 使用从 submitted 里直接取到的值
               emailSignature: emailSignature,
