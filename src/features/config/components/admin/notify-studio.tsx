@@ -224,12 +224,12 @@ function EmailChannel() {
           </Field>
         </div>
 
-        {/* ✅ 新增：邮件签名输入框 */}
-        <h3 className="settings-group-title">{m.settings_email_signature_title()}</h3>
-        <Field label={m.settings_email_signature_label()}>
+        {/* ✅ 新增：邮件签名输入框（硬编码中文，避免 i18n 报错） */}
+        <h3 className="settings-group-title">邮件签名</h3>
+        <Field label="签名内容">
           <textarea
             {...register("notification.emailSignature")}
-            placeholder={m.settings_email_signature_ph()}
+            placeholder={"例如：\nRyn\n星界旅人手记\nhttps://ryn.us.ci"}
             rows={4}
             className={cn(
               SETTINGS_FIELD_CLASS,
@@ -238,7 +238,7 @@ function EmailChannel() {
           />
         </Field>
         <p className="settings-muted">
-          {m.settings_email_signature_hint()}
+          每次发送邮件时，会自动追加到邮件正文末尾。
         </p>
 
         <button
