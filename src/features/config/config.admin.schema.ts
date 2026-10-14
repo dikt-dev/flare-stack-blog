@@ -9,11 +9,13 @@ const ConfigRevisionSchema = z
   .describe(
     "Modification revision of the selected section, read from GET /admin/config. Site and notification revisions are independent; stale writes/tests fail with CONFIG_CONFLICT (409).",
   );
+
 const SecretChangeSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("keep") }).strict(),
   z.object({ action: z.literal("replace"), value: z.string().min(1) }).strict(),
   z.object({ action: z.literal("clear") }).strict(),
 ]);
+
 const DeliveryEmailSchema = z
   .object({
     host: z.string().trim(),
@@ -23,15 +25,20 @@ const DeliveryEmailSchema = z
     senderAddress: z.union([z.email(), z.literal("")]),
   })
   .strict();
+
 const DeliveryNotificationSchema = z
   .object({
     admin: z
       .object({ channels: z.object({ email: z.boolean() }).strict() })
       .strict(),
     user: z.object({ emailEnabled: z.boolean() }).strict(),
+    // ✅ 新增：邮件签名
+    // 必须允许它通过校验，否则前端传过来的 emailSignature 会被 strict() 拒绝
+    emailSignature: z.string().optional().default(""),
     webhook: z.object({ url: z.union([z.url(), z.literal("")]) }).strict(),
   })
   .strict();
+
 export const UpdateConfigSectionSchema = z.discriminatedUnion("section", [
   z
     .object({
@@ -59,6 +66,7 @@ export const UpdateConfigSectionSchema = z.discriminatedUnion("section", [
     })
     .strict(),
 ]);
+
 export const AdminConfigSnapshotSchema = z.object({
   config: SystemConfigSchema.describe(
     "Resolved settings. Existing email passwords and Webhook secrets are empty strings, and legacy email.apiKey is omitted. Use secrets flags for configuration status; empty response fields do not request credential removal.",
@@ -77,6 +85,7 @@ export const AdminConfigSnapshotSchema = z.object({
       "Storage format version, distinct from per-section modification revisions.",
     ),
 });
+
 export const SavedSecretInputSchema = z.discriminatedUnion("action", [
   z
     .object({
@@ -86,10 +95,12 @@ export const SavedSecretInputSchema = z.discriminatedUnion("action", [
     .strict(),
   z.object({ action: z.literal("replace"), value: z.string().min(1) }).strict(),
 ]);
+
 export type UpdateConfigSection = z.infer<typeof UpdateConfigSectionSchema>;
 export type AdminConfigSnapshot = z.infer<typeof AdminConfigSnapshotSchema>;
 export type SecretChange = z.infer<typeof SecretChangeSchema>;
 export type SavedSecretInput = z.infer<typeof SavedSecretInputSchema>;
+
 export const CONFIG_ERRORS = {
   CONFIG_CONFLICT: {
     status: 409,
