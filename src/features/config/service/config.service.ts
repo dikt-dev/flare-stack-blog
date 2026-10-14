@@ -35,6 +35,7 @@ export async function getAdminConfig(
   const snapshot = await ConfigRepo.getConfigSnapshot(context.db);
   return redactSnapshot(snapshot);
 }
+
 function redactSnapshot(
   snapshot: Awaited<ReturnType<typeof ConfigRepo.getConfigSnapshot>>,
 ): AdminConfigSnapshot {
@@ -66,6 +67,7 @@ function redactSnapshot(
     schemaVersion: 1,
   };
 }
+
 function changeSecret(current: string | undefined, change: SecretChange) {
   return change.action === "keep"
     ? (current ?? "")
@@ -73,6 +75,7 @@ function changeSecret(current: string | undefined, change: SecretChange) {
       ? ""
       : change.value;
 }
+
 export async function updateSystemConfig(
   context: DbContext & { executionCtx: ExecutionContext },
   input: UpdateConfigSection,
@@ -101,6 +104,11 @@ export async function updateSystemConfig(
             },
             notification: {
               ...data.notification,
+              // ✅ 确保 emailSignature 有值（前端传了就覆盖，没传就保持数据库原值）
+              emailSignature:
+                data.notification.emailSignature ??
+                current.config.notification?.emailSignature ??
+                "",
               webhook: {
                 url: data.notification.webhook.url,
                 secret: changeSecret(
@@ -148,6 +156,7 @@ export async function updateSystemConfig(
   }
   throw new ORPCError("CONFIG_CONFLICT", { status: 409 });
 }
+
 export async function resolveTestSecret(
   context: DbContext,
   kind: "emailPassword" | "webhookSecret",
