@@ -224,6 +224,23 @@ function EmailChannel() {
           </Field>
         </div>
 
+        {/* ✅ 新增：邮件签名输入框 */}
+        <h3 className="settings-group-title">{m.settings_email_signature_title()}</h3>
+        <Field label={m.settings_email_signature_label()}>
+          <textarea
+            {...register("notification.emailSignature")}
+            placeholder={m.settings_email_signature_ph()}
+            rows={4}
+            className={cn(
+              SETTINGS_FIELD_CLASS,
+              "resize-y min-h-[80px] font-mono text-sm",
+            )}
+          />
+        </Field>
+        <p className="settings-muted">
+          {m.settings_email_signature_hint()}
+        </p>
+
         <button
           type="button"
           onClick={() => void handleTest()}
