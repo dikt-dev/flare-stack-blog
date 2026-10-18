@@ -2,7 +2,7 @@ import { m } from "@/paraglide/messages";
 import { CacheMaintenance } from "@/features/cache/components/cache-maintenance";
 import { PostPopularityMaintenance } from "@/features/post-popularity/components/post-popularity-maintenance";
 import { SearchMaintenance } from "@/features/search/components/search-maintenance";
-import { VersionMaintenance } from "@/features/version/components/version-maintenance";
+// ✅ 删除了 VersionMaintenance 的引入
 
 export function MaintenanceSection() {
   return (
@@ -15,7 +15,7 @@ export function MaintenanceSection() {
           </p>
         </div>
       </div>
-      <VersionMaintenance />
+      {/* ✅ 删除了 <VersionMaintenance /> */}
       <PostPopularityMaintenance />
       <SearchMaintenance />
       <CacheMaintenance />
