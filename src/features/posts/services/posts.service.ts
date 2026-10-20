@@ -32,7 +32,7 @@ import {
 import { toIsoOrNull } from "@/features/posts/public-snapshot";
 import type { PublicPostCover } from "@/lib/db/schema";
 
-import { slugify } from "@/features/posts/utils/content";
+import { slugify, convertToPlainText } from "@/features/posts/utils/content";
 import { normalizePostContent } from "@/features/posts/utils/normalize-content";
 import {
   isFuturePublishDate,
@@ -44,11 +44,6 @@ import * as SearchService from "@/features/search/service/search.service";
 import type { PublicPostSnapshot } from "@/lib/db/schema";
 import { err, ok } from "@/lib/errors";
 
-// ✅ 新增：Tiptap 摘要生成所需的导入
-import { generateText } from "@tiptap/core";
-import { StarterKit } from "@tiptap/starter-kit";
-// ⚠️ 请把你在编辑器里用到的其他 Tiptap 扩展也加到这里（例如 Image, Link 等）
-
 /**
  * 从正文中提取摘要
  * 规则：取正文第一段；如果第一段超过 maxLength 字，则截取前 maxLength 字。
@@ -58,16 +53,20 @@ export function extractSummaryFromContent(
   maxLength = 120,
 ): string {
   if (!contentJson) return "";
-  // 1. 用 Tiptap 从 JSON 中提取纯文本
-  const plainText = generateText(contentJson, [StarterKit]);
-  // 2. 按换行切分，过滤空行
+  
+  // 使用轻量的纯文本转换工具，完美兼容图片、代码块等所有节点
+  const plainText = convertToPlainText(contentJson);
+  
+  // 按换行切分，过滤空行
   const lines = plainText
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
-  // 3. 取第一段
+    
+  // 取第一段
   const firstParagraph = lines[0] || "";
-  // 4. 超过 120 字则截取前 120 字
+  
+  // 超过 120 字则截取前 120 字
   return firstParagraph.length > maxLength
     ? firstParagraph.slice(0, maxLength)
     : firstParagraph;
@@ -130,7 +129,7 @@ async function buildPublicSnapshot(
   return {
     title: post.title,
     summary: post.summary,
-    summaryType: post.summaryType, // ✅ 新增：快照同步摘要类型
+    summaryType: post.summaryType, // ✅ 快照同步摘要类型
     slug: post.slug,
     contentJson,
     tagIds: [...new Set(post.tags.map((tag) => tag.id))].sort((a, b) => a - b),
